@@ -25,7 +25,6 @@ import { ThemeToggle } from '@/components/common/ThemeToggle'
 import { LanguageToggle } from '@/components/common/LanguageToggle'
 import type { TFunction } from 'i18next'
 import { useTranslation } from '@/lib/hooks/use-translation'
-import { Separator } from '@/components/ui/separator'
 import {
   Book,
   Search,
@@ -127,7 +126,7 @@ export function AppSidebar() {
     <TooltipProvider delayDuration={0}>
       <div
         className={cn(
-          'app-sidebar flex h-full flex-col bg-sidebar border-sidebar-border border-r transition-all duration-300',
+          'app-sidebar flex h-full flex-col bg-sidebar transition-all duration-300',
           isCollapsed ? 'w-16' : 'w-64'
         )}
       >
@@ -189,25 +188,25 @@ export function AppSidebar() {
                     <DropdownMenuTrigger asChild>
                       <Button
                         onClick={() => setCreateMenuOpen(true)}
-                        variant="default"
+                        variant="tonal"
                         size="sm"
-                        className="w-full justify-center px-2 font-display font-bold"
+                        className="w-full justify-center px-2 font-medium"
                         aria-label={t('common.create')}
                       >
                         <Plus className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                   </TooltipTrigger>
-                   <TooltipContent side="right">{t('common.create')}</TooltipContent>
+                  <TooltipContent side="right">{t('common.create')}</TooltipContent>
                 </Tooltip>
               ) : (
                 <DropdownMenuTrigger asChild>
                   <Button
                     onClick={() => setCreateMenuOpen(true)}
-                    variant="default"
+                    variant="tonal"
                     size="sm"
-                    className="w-full justify-start font-display font-bold"
-                   >
+                    className="w-full justify-start font-medium"
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     {t('common.create')}
                   </Button>
@@ -226,7 +225,7 @@ export function AppSidebar() {
                   }}
                   className="gap-2"
                 >
-                   <FileText className="h-4 w-4" />
+                  <FileText className="h-4 w-4" />
                   {t('common.source')}
                 </DropdownMenuItem>
                 <DropdownMenuItem
@@ -236,7 +235,7 @@ export function AppSidebar() {
                   }}
                   className="gap-2"
                 >
-                   <Book className="h-4 w-4" />
+                  <Book className="h-4 w-4" />
                   {t('common.notebook')}
                 </DropdownMenuItem>
                 <DropdownMenuItem
@@ -246,7 +245,7 @@ export function AppSidebar() {
                   }}
                   className="gap-2"
                 >
-                   <Mic className="h-4 w-4" />
+                  <Mic className="h-4 w-4" />
                   {t('common.podcast')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -254,16 +253,9 @@ export function AppSidebar() {
           </div>
 
           {navigation.map((section, index) => (
-            <div key={section.title}>
-              {index > 0 && (
-                <Separator className="my-3" />
-              )}
+            <div key={section.title} className={index > 0 ? 'pt-4' : undefined}>
               <div className="space-y-1">
-                {!isCollapsed && (
-                  <h3 className="mb-1.5 px-3 text-[10.5px] font-bold uppercase tracking-[0.14em] text-sidebar-foreground/40">
-                    {section.title}
-                  </h3>
-                )}
+                <h3 className="sr-only">{section.title}</h3>
 
                 {section.items.map((item) => {
                   const isActive = item.href === activeHref
@@ -273,7 +265,7 @@ export function AppSidebar() {
                       className={cn(
                         'w-full gap-2.5 text-[13px] font-medium text-sidebar-foreground/80 sidebar-menu-item relative',
                         isActive &&
-                          'bg-popover font-semibold text-sidebar-foreground ring-1 ring-inset ring-border before:absolute before:-left-1.5 before:top-[7px] before:bottom-[7px] before:w-[3px] before:rounded-[2px] before:bg-fern',
+                          'bg-sidebar-accent font-semibold text-sidebar-accent-foreground',
                         isCollapsed ? 'justify-center px-2' : 'justify-start'
                       )}
                     >
@@ -308,7 +300,7 @@ export function AppSidebar() {
 
         <div
           className={cn(
-            'border-t border-sidebar-border p-3 space-y-2',
+            'p-3 space-y-2',
             isCollapsed && 'px-2'
           )}
         >
@@ -316,7 +308,7 @@ export function AppSidebar() {
           {!isCollapsed && (
             <div className="px-3 py-1.5 text-xs text-sidebar-foreground/60">
               <div className="flex items-center justify-between">
-                 <span className="flex items-center gap-1.5">
+                <span className="flex items-center gap-1.5">
                   <Command className="h-3 w-3" />
                   {t('common.quickActions')}
                 </span>
@@ -324,13 +316,13 @@ export function AppSidebar() {
                   {isMac ? <span className="text-xs">⌘</span> : <span>Ctrl+</span>}K
                 </kbd>
               </div>
-               <p className="mt-1 text-[10px] text-sidebar-foreground/40">
+              <p className="mt-1 text-[10px] text-sidebar-foreground/40">
                 {t('common.quickActionsDesc')}
               </p>
             </div>
           )}
 
-           <div
+          <div
             className={cn(
               'flex flex-col gap-2',
               isCollapsed ? 'items-center' : 'items-stretch'
@@ -375,7 +367,7 @@ export function AppSidebar() {
                   <LogOut className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-               <TooltipContent side="right">{t('common.signOut')}</TooltipContent>
+              <TooltipContent side="right">{t('common.signOut')}</TooltipContent>
             </Tooltip>
           ) : (
             <Button
@@ -383,7 +375,7 @@ export function AppSidebar() {
               className="w-full justify-start gap-2 sidebar-menu-item"
               onClick={logout}
               aria-label={t('common.signOut')}
-             >
+            >
               <LogOut className="h-4 w-4" />
               {t('common.signOut')}
             </Button>
