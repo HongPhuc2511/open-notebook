@@ -51,7 +51,7 @@ export function NotebookList({
         title={emptyTitle ?? t('common.noResults')}
         description={emptyDescription ?? t('chat.startByCreating')}
         action={onAction && actionLabel ? (
-          <Button onClick={onAction} variant="outline" className="mt-4">
+          <Button onClick={onAction} variant="tonal" className="mt-4">
             <Plus className="h-4 w-4 mr-2" />
             {actionLabel}
           </Button>
@@ -61,12 +61,13 @@ export function NotebookList({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="flex items-center gap-2">
         {collapsible && (
           <Button
             variant="ghost"
-            size="sm"
+            size="icon"
+            className="size-8"
             onClick={() => setIsExpanded(!isExpanded)}
           >
             {isExpanded ? (
@@ -76,7 +77,7 @@ export function NotebookList({
             )}
           </Button>
         )}
-        <h2 className="font-display text-lg font-semibold tracking-tight">{title}</h2>
+        <h2 className="text-2xl font-normal tracking-tight">{title}</h2>
         <span className="text-sm text-muted-foreground">({notebooks.length})</span>
       </div>
 
@@ -88,7 +89,7 @@ export function NotebookList({
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {notebooks.map((notebook) => (
               <NotebookCard key={notebook.id} notebook={notebook} />
             ))}

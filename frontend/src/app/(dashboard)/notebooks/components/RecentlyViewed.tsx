@@ -57,10 +57,10 @@ export function RecentlyViewed({ limit = 12 }: RecentlyViewedProps) {
   }
 
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="space-y-4">
+    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="space-y-5">
       <div className="flex items-center gap-2">
         <CollapsibleTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+          <Button variant="ghost" size="icon" className="size-8">
             {isOpen ? (
               <ChevronDown className="h-4 w-4" />
             ) : (
@@ -73,7 +73,7 @@ export function RecentlyViewed({ limit = 12 }: RecentlyViewedProps) {
             </span>
           </Button>
         </CollapsibleTrigger>
-        <h2 className="font-display text-lg font-semibold tracking-tight">
+        <h2 className="text-2xl font-normal tracking-tight">
           {t('notebooks.recentlyViewed', { defaultValue: 'Recently Viewed' })}
         </h2>
         <span className="text-sm text-muted-foreground">({items.length})</span>
@@ -96,19 +96,19 @@ export function RecentlyViewed({ limit = 12 }: RecentlyViewedProps) {
               <Link
                 key={`${item.type}-${item.id}`}
                 href={getItemHref(item)}
-                className="group flex items-center gap-3 rounded-md border bg-card px-3 py-2 card-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="group flex items-center gap-3 rounded-2xl bg-card px-4 py-3 card-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <div
-                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted ${
+                  className={`flex size-10 shrink-0 items-center justify-center rounded-full bg-popover ${
                     item.type === 'notebook' ? 'text-teal' : 'text-sage'
                   }`}
                 >
-                  <Icon className="h-3.5 w-3.5" />
+                  <Icon className="h-4 w-4" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex min-w-0 items-center gap-2">
                     <p className="truncate text-sm font-medium">{item.title}</p>
-                    <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
                       {typeLabel}
                     </span>
                   </div>
