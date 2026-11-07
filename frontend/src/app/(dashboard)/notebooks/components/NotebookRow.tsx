@@ -47,7 +47,7 @@ export function NotebookRow({ notebook }: NotebookRowProps) {
           the accessible primary action (a real link) for keyboard/screen-reader
           users — avoiding nested interactive (button-in-button) semantics. */}
       <div
-        className="group flex items-center gap-4 rounded-lg border bg-card px-4 py-3 card-hover"
+        className="group flex items-center gap-4 rounded-2xl bg-card px-5 py-3.5 card-hover"
         onClick={handleRowClick}
         style={{ cursor: 'pointer' }}
       >
@@ -56,7 +56,7 @@ export function NotebookRow({ notebook }: NotebookRowProps) {
             <Link
               href={`/notebooks/${encodeURIComponent(notebook.id)}`}
               onClick={(e) => e.stopPropagation()}
-              className="font-medium truncate rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="text-base font-normal truncate rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               {notebook.name}
             </Link>
@@ -96,7 +96,7 @@ export function NotebookRow({ notebook }: NotebookRowProps) {
             <Button
               aria-label={t('common.actions')}
               variant="ghost"
-              size="sm"
+              size="icon"
               className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 transition-opacity shrink-0"
               onClick={(e) => e.stopPropagation()}
             >

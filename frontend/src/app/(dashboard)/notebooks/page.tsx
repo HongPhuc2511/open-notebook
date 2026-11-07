@@ -54,18 +54,18 @@ export default function NotebooksPage() {
   return (
     <AppShell>
       <div className="flex-1 overflow-y-auto">
-        <div className="p-6 space-y-6">
+        <div className="p-8 space-y-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <h1 className="font-display text-2xl font-bold tracking-tight">{t('notebooks.title')}</h1>
-            <Button variant="outline" size="sm" onClick={() => refetch()}>
+            <h1 className="text-3xl font-normal tracking-tight">{t('notebooks.title')}</h1>
+            <Button variant="ghost" size="icon" onClick={() => refetch()}>
               <RefreshCw className="h-4 w-4" />
             </Button>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-            <div className="flex items-center rounded-md border p-0.5">
+            <div className="flex items-center rounded-full bg-muted p-1">
               <Button
-                variant={viewMode === 'tile' ? 'secondary' : 'ghost'}
+                variant={viewMode === 'tile' ? 'tonal' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('tile')}
                 aria-label={t('notebooks.tileView')}
@@ -75,7 +75,7 @@ export default function NotebooksPage() {
                 <LayoutGrid className="h-4 w-4" />
               </Button>
               <Button
-                variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+                variant={viewMode === 'list' ? 'tonal' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('list')}
                 aria-label={t('notebooks.listView')}
@@ -95,7 +95,7 @@ export default function NotebooksPage() {
               aria-label={t('common.accessibility.searchNotebooks') || "Search notebooks"}
               className="w-full sm:w-64"
             />
-            <Button onClick={() => setCreateDialogOpen(true)}>
+            <Button variant="tonal" onClick={() => setCreateDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               {t('notebooks.newNotebook')}
             </Button>
