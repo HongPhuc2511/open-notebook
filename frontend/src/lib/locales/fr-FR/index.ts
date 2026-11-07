@@ -269,6 +269,7 @@ export const frFR = {
     bulkContext: "Contexte",
     includeAllInContext: "Tout inclure dans le contexte",
     includeAllInsights: "Tout inclure (aperçus uniquement)",
+    selectAll: "Tout sélectionner",
     includeAllFull: "Tout inclure (contenu complet)",
     excludeAllFromContext: "Tout exclure du contexte",
     title: "Sources",

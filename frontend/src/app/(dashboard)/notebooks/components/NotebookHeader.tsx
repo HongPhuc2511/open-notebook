@@ -4,7 +4,14 @@ import { useState } from 'react'
 import { NotebookResponse } from '@/lib/types/api'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Archive, ArchiveRestore, Trash2 } from 'lucide-react'
+import Link from 'next/link'
+import { ArrowLeft, Archive, ArchiveRestore, MoreVertical, Trash2 } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { useUpdateNotebook } from '@/lib/hooks/use-notebooks'
 import { NotebookDeleteDialog } from './NotebookDeleteDialog'
 import { formatDistanceToNow } from 'date-fns'
@@ -48,72 +55,91 @@ export function NotebookHeader({ notebook }: NotebookHeaderProps) {
     })
   }
 
-  return (
+    return (
     <>
-      <div className="border-b pb-6">
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 flex-1">
-              <InlineEdit
-                id="notebook-name"
-                name="notebook-name"
-                value={notebook.name}
-                onSave={handleUpdateName}
-                className="font-display text-2xl font-bold tracking-tight"
-                inputClassName="font-display text-2xl font-bold tracking-tight"
-                placeholder={t('notebooks.namePlaceholder')}
-              />
-              {notebook.archived && (
-                <Badge variant="secondary">{t('notebooks.archived')}</Badge>
-              )}
-            </div>
-            <div className="flex gap-2">
+      <div className="pb-2">
+        {/* Top row: back button, title, overflow menu */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <Button
+              asChild
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 shrink-0 rounded-full"
+              aria-label="Back to notebooks"
+            >
+              <Link href="/notebooks">
+                <ArrowLeft className="h-5 w-5" />
+              </Link>
+            </Button>
+            <InlineEdit
+              id="notebook-name"
+              name="notebook-name"
+              value={notebook.name}
+              onSave={handleUpdateName}
+              className="text-2xl font-normal tracking-tight"
+              inputClassName="text-2xl font-normal tracking-tight"
+              placeholder={t('notebooks.namePlaceholder')}
+            />
+            {notebook.archived && (
+              <Badge variant="secondary" className="rounded-full">
+                {t('notebooks.archived')}
+              </Badge>
+            )}
+          </div>
+
+          {/* Archive / delete live in an overflow menu, like NotebookLM */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
               <Button
-                variant="outline"
-                size="sm"
-                onClick={handleArchiveToggle}
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 shrink-0 rounded-full"
+                aria-label="More actions"
               >
+                <MoreVertical className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleArchiveToggle}>
                 {notebook.archived ? (
                   <>
-                    <ArchiveRestore className="h-4 w-4 mr-2" />
+                    <ArchiveRestore className="mr-2 h-4 w-4" />
                     {t('notebooks.unarchive')}
                   </>
                 ) : (
                   <>
-                    <Archive className="h-4 w-4 mr-2" />
+                    <Archive className="mr-2 h-4 w-4" />
                     {t('notebooks.archive')}
                   </>
                 )}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
+              </DropdownMenuItem>
+              <DropdownMenuItem
                 onClick={() => setShowDeleteDialog(true)}
-                className="text-destructive hover:text-destructive"
+                className="text-destructive focus:text-destructive"
               >
-                <Trash2 className="h-4 w-4 mr-2" />
+                <Trash2 className="mr-2 h-4 w-4" />
                 {t('common.delete')}
-              </Button>
-            </div>
-          </div>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
 
-          {/* Signature: one short flat fern underline — one hue, no show */}
-          <div aria-hidden className="h-[3px] w-14 rounded-[1px] bg-fern" />
-
+        {/* Description and timestamps, indented to align with the title */}
+        <div className="pl-12">
           <InlineEdit
             id="notebook-description"
             name="notebook-description"
             value={notebook.description || ''}
             onSave={handleUpdateDescription}
-            className="text-muted-foreground"
-            inputClassName="text-muted-foreground"
+            className="text-sm text-muted-foreground"
+            inputClassName="text-sm text-muted-foreground"
             placeholder={t('notebooks.addDescription')}
             multiline
             emptyText={t('notebooks.addDescription')}
           />
-          
           <div className="text-xs text-muted-foreground">
-            {t('common.created', { time: formatDistanceToNow(new Date(notebook.created), { addSuffix: true, locale: dfLocale }) })} • 
+            {t('common.created', { time: formatDistanceToNow(new Date(notebook.created), { addSuffix: true, locale: dfLocale }) })} •{' '}
             {t('common.updated', { time: formatDistanceToNow(new Date(notebook.updated), { addSuffix: true, locale: dfLocale }) })}
           </div>
         </div>

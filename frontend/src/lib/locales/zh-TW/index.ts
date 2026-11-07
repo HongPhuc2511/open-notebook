@@ -269,6 +269,7 @@ export const zhTW = {
     bulkContext: "上下文",
     includeAllInContext: "全部加入上下文",
     includeAllInsights: "全部加入（僅見解）",
+    selectAll: "全選",
     includeAllFull: "全部加入（完整內容）",
     excludeAllFromContext: "全部移出上下文",
     title: "來源",

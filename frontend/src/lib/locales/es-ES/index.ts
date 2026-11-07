@@ -269,6 +269,7 @@ export const esES = {
     bulkContext: "Contexto",
     includeAllInContext: "Incluir todas en el contexto",
     includeAllInsights: "Incluir todas (solo insights)",
+    selectAll: "Seleccionar todo",
     includeAllFull: "Incluir todas (contenido completo)",
     excludeAllFromContext: "Excluir todas del contexto",
     title: "Fuentes",

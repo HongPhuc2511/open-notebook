@@ -269,6 +269,7 @@ export const caES = {
     bulkContext: "Context",
     includeAllInContext: "Inclou-les totes al context",
     includeAllInsights: "Inclou-les totes (només informacions)",
+    selectAll: "Selecciona-ho tot",
     includeAllFull: "Inclou-les totes (contingut complet)",
     excludeAllFromContext: "Exclou-les totes del context",
     title: "Fonts",

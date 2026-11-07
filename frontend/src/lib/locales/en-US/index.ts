@@ -268,6 +268,7 @@ export const enUS = {
     bulkContext: "Context",
     includeAllInContext: "Include all in context",
     includeAllInsights: "Include all (insights only)",
+    selectAll: "Select all",
     includeAllFull: "Include all (full content)",
     excludeAllFromContext: "Exclude all from context",
     add: "Add Source",

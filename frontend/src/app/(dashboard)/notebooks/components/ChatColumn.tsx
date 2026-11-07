@@ -68,7 +68,7 @@ export function ChatColumn({ notebookId, contextSelections, sources, sourcesLoad
   // Show loading state while sources/notes are being fetched
   if (sourcesLoading || notesLoading) {
     return (
-      <Card className="h-full flex flex-col">
+      <Card className="h-full flex flex-col rounded-2xl bg-popover">
         <CardContent className="flex-1 flex items-center justify-center">
           <LoadingSpinner size="lg" />
         </CardContent>

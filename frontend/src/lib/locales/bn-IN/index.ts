@@ -269,6 +269,7 @@ export const bnIN = {
     bulkContext: "প্রসঙ্গ",
     includeAllInContext: "সবগুলো প্রসঙ্গে যোগ করুন",
     includeAllInsights: "সব যোগ করুন (শুধু অন্তর্দৃষ্টি)",
+    selectAll: "সব নির্বাচন করুন",
     includeAllFull: "সব যোগ করুন (সম্পূর্ণ বিষয়বস্তু)",
     excludeAllFromContext: "সবগুলো প্রসঙ্গ থেকে বাদ দিন",
     title: "উৎসগুলি",

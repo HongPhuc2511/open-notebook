@@ -269,6 +269,7 @@ export const ptBR = {
     bulkContext: "Contexto",
     includeAllInContext: "Incluir todas no contexto",
     includeAllInsights: "Incluir todas (apenas insights)",
+    selectAll: "Selecionar tudo",
     includeAllFull: "Incluir todas (conteúdo completo)",
     excludeAllFromContext: "Excluir todas do contexto",
     title: "Fontes",

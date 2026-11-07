@@ -269,6 +269,7 @@ export const jaJP = {
     bulkContext: "コンテキスト",
     includeAllInContext: "すべてをコンテキストに含める",
     includeAllInsights: "すべて含める（インサイトのみ）",
+    selectAll: "すべて選択",
     includeAllFull: "すべて含める（全文）",
     excludeAllFromContext: "すべてをコンテキストから除外",
     title: "ソース",

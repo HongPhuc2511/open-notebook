@@ -89,11 +89,10 @@ export function NotesColumn({
         collapsedIcon={StickyNote}
         collapsedLabel={notesLabel}
       >
-        <Card className="h-full flex flex-col flex-1 overflow-hidden">
+        <Card className="h-full flex flex-col flex-1 gap-3 overflow-hidden rounded-2xl bg-popover py-5">
           <CardHeader className="pb-3 flex-shrink-0">
             <div className="flex items-center justify-between gap-2">
-              <CardTitle className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.13em] text-muted-foreground">
-                <span aria-hidden className="h-3.5 w-[3px] rounded-full bg-gold" />
+              <CardTitle className="flex items-center gap-2 text-lg font-normal text-foreground">
                 {notesLabel}
               </CardTitle>
               <div className="flex items-center gap-2">
@@ -115,7 +114,7 @@ export function NotesColumn({
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
-                <Button size="sm" onClick={() => handleOpenEditor()}>
+                <Button size="sm" variant="tonal" className="rounded-full" onClick={() => handleOpenEditor()}>
                   <Plus className="h-4 w-4 mr-2" />
                   {t('common.writeNote')}
                 </Button>
@@ -140,7 +139,7 @@ export function NotesColumn({
                 {notes.map((note) => (
                   <div
                     key={note.id}
-                    className="p-3 border rounded-md bg-card shadow-none card-hover group relative cursor-pointer"
+                    className="p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors group relative cursor-pointer"
                     onClick={() => handleOpenEditor(note)}
                   >
                     <div className="flex items-start justify-between mb-2">

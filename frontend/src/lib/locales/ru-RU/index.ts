@@ -269,6 +269,7 @@ export const ruRU = {
     bulkContext: "Контекст",
     includeAllInContext: "Включить все в контекст",
     includeAllInsights: "Включить все (только выводы)",
+    selectAll: "Выбрать все",
     includeAllFull: "Включить все (полный текст)",
     excludeAllFromContext: "Исключить все из контекста",
     title: "Источники",

@@ -269,6 +269,7 @@ export const trTR = {
     bulkContext: "Bağlam",
     includeAllInContext: "Tümünü bağlama dahil et",
     includeAllInsights: "Tümünü dahil et (yalnızca içgörüler)",
+    selectAll: "Tümünü seç",
     includeAllFull: "Tümünü dahil et (tam içerik)",
     excludeAllFromContext: "Tümünü bağlamdan çıkar",
     title: "Kaynaklar",

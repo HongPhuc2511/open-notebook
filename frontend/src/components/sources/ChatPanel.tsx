@@ -103,11 +103,10 @@ export function ChatPanel({
 
   return (
     <>
-    <Card className="flex flex-col h-full flex-1 overflow-hidden">
+    <Card className="flex flex-col h-full flex-1 overflow-hidden rounded-2xl bg-popover">
       <CardHeader className="pb-3 flex-shrink-0">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.13em] text-muted-foreground">
-            <span aria-hidden className="h-3.5 w-[3px] rounded-full bg-teal" />
+          <CardTitle className="flex items-center gap-2 text-lg font-normal text-foreground">
             {title || (contextType === 'source' ? t('chat.chatWith', { name: t('navigation.sources') }) : t('chat.chatWith', { name: t('common.notebook') }))}
           </CardTitle>
           {onSelectSession && onCreateSession && onDeleteSession && (
@@ -271,7 +270,7 @@ function ChatComposer({
   const keyHint = isMac ? '⌘+Enter' : 'Ctrl+Enter'
 
   return (
-    <div className="flex-shrink-0 p-4 space-y-3 border-t">
+    <div className="flex-shrink-0 p-4 space-y-3">
       {/* Model selector */}
       {onModelChange && (
         <div className="flex items-center justify-between">
@@ -294,14 +293,14 @@ function ChatComposer({
           onKeyDown={handleKeyDown}
           placeholder={`${t('chat.sendPlaceholder')} (${t('chat.pressToSend', { key: keyHint })})`}
           disabled={isStreaming}
-          className="flex-1 min-h-[40px] max-h-[100px] resize-none py-2 px-3 min-w-0"
+          className="flex-1 min-h-[44px] max-h-[100px] resize-none rounded-3xl py-3 px-5 min-w-0"
           rows={1}
         />
         <Button
           onClick={handleSend}
           disabled={!input.trim() || isStreaming}
           size="icon"
-          className="h-[40px] w-[40px] flex-shrink-0"
+          className="h-[44px] w-[44px] flex-shrink-0 rounded-full"
         >
           {isStreaming ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -342,11 +341,11 @@ const ChatMessage = memo(function ChatMessage({
       )}
       <div className="flex flex-col gap-2 max-w-[80%]">
         <div
-          className={`rounded-lg px-4 py-2 border ${
-            message.type === 'human'
-              ? 'bg-muted'
-              : 'bg-card'
-          }`}
+          className={`rounded-2xl px-4 py-2 ${
+              message.type === 'human'
+                ? 'bg-muted'
+                : 'bg-transparent'
+            }`}
         >
           {message.type === 'ai' ? (
             <AIMessageContent
