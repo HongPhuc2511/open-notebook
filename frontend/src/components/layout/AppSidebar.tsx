@@ -25,7 +25,6 @@ import { ThemeToggle } from '@/components/common/ThemeToggle'
 import { LanguageToggle } from '@/components/common/LanguageToggle'
 import type { TFunction } from 'i18next'
 import { useTranslation } from '@/lib/hooks/use-translation'
-import { Separator } from '@/components/ui/separator'
 import {
   Book,
   Search,
@@ -127,7 +126,7 @@ export function AppSidebar() {
     <TooltipProvider delayDuration={0}>
       <div
         className={cn(
-          'app-sidebar flex h-full flex-col bg-sidebar border-sidebar-border border-r transition-all duration-300',
+          'app-sidebar flex h-full flex-col bg-sidebar transition-all duration-300',
           isCollapsed ? 'w-16' : 'w-64'
         )}
       >
@@ -189,9 +188,9 @@ export function AppSidebar() {
                     <DropdownMenuTrigger asChild>
                       <Button
                         onClick={() => setCreateMenuOpen(true)}
-                        variant="default"
+                        variant="tonal"
                         size="sm"
-                        className="w-full justify-center px-2 font-display font-bold"
+                        className="w-full justify-center px-2 font-medium"
                         aria-label={t('common.create')}
                       >
                         <Plus className="h-4 w-4" />
@@ -254,16 +253,9 @@ export function AppSidebar() {
           </div>
 
           {navigation.map((section, index) => (
-            <div key={section.title}>
-              {index > 0 && (
-                <Separator className="my-3" />
-              )}
+            <div key={section.title} className={index > 0 ? 'pt-4' : undefined}>
               <div className="space-y-1">
-                {!isCollapsed && (
-                  <h3 className="mb-1.5 px-3 text-[10.5px] font-bold uppercase tracking-[0.14em] text-sidebar-foreground/40">
-                    {section.title}
-                  </h3>
-                )}
+                <h3 className="sr-only">{section.title}</h3>
 
                 {section.items.map((item) => {
                   const isActive = item.href === activeHref
@@ -272,7 +264,7 @@ export function AppSidebar() {
                       variant="ghost"
                       className={cn(
                         'w-full gap-2.5 text-[13px] font-medium text-sidebar-foreground/80 sidebar-menu-item relative',
-                        isActive &&
+                        isActive && 'bg-sidebar-accent font-semibold text-sidebar-accent-foreground',
                           'bg-popover font-semibold text-sidebar-foreground ring-1 ring-inset ring-border before:absolute before:-left-1.5 before:top-[7px] before:bottom-[7px] before:w-[3px] before:rounded-[2px] before:bg-fern',
                         isCollapsed ? 'justify-center px-2' : 'justify-start'
                       )}
@@ -308,7 +300,7 @@ export function AppSidebar() {
 
         <div
           className={cn(
-            'border-t border-sidebar-border p-3 space-y-2',
+            'p-3 space-y-2',
             isCollapsed && 'px-2'
           )}
         >
