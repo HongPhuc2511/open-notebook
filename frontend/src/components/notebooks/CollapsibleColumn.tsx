@@ -33,7 +33,7 @@ export function CollapsibleColumn({
               className={cn(
                 'flex flex-col items-center justify-center gap-3',
                 'w-12 h-full min-h-0',
-                'border rounded-lg',
+                'rounded-3xl',
                 'bg-card hover:bg-accent/50',
                 'transition-all duration-150',
                 'cursor-pointer group',

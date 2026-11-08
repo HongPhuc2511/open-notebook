@@ -24,6 +24,7 @@ import type { SourceBulkAction } from '@/lib/utils/source-context'
 import { CollapsibleColumn, createCollapseButton } from '@/components/notebooks/CollapsibleColumn'
 import { useNotebookColumnsStore } from '@/lib/stores/notebook-columns-store'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { Checkbox } from '@/components/ui/checkbox'
 
 interface SourcesColumnProps {
   sources?: SourceListResponse[]
@@ -97,6 +98,11 @@ export function SourcesColumn({
     return () => container.removeEventListener('scroll', handleScroll)
   }, [handleScroll])
   
+  // True when every loaded source is included in the chat context
+  const allSelected =
+    !!sources?.length &&
+    sources.every((s) => contextSelections?.[s.id] && contextSelections[s.id] !== 'off')
+
   const handleDeleteClick = (sourceId: string) => {
     setSourceToDelete(sourceId)
     setDeleteDialogOpen(true)
@@ -156,11 +162,11 @@ export function SourcesColumn({
         collapsedIcon={FileText}
         collapsedLabel={t('navigation.sources')}
       >
-        <Card className="h-full flex flex-col flex-1 overflow-hidden">
+        <Card className="h-full flex flex-col flex-1 gap-3 overflow-hidden rounded-2xl bg-popover py-5">
           <CardHeader className="pb-3 flex-shrink-0">
             <div className="flex items-center justify-between gap-2">
-              <CardTitle className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.13em] text-muted-foreground">
-                <span aria-hidden className="h-3.5 w-[3px] rounded-full bg-sage" />
+              <CardTitle className="flex items-center gap-2 text-lg font-normal text-foreground">
+                
                 {t('navigation.sources')}
               </CardTitle>
               <div className="flex items-center gap-2">
@@ -187,7 +193,7 @@ export function SourcesColumn({
                 )}
                 <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
                   <DropdownMenuTrigger asChild>
-                    <Button size="sm">
+                    <Button size="sm" variant="tonal" className="rounded-full">
                       <Plus className="h-4 w-4 mr-2" />
                       {t('sources.addSource')}
                       <ChevronDown className="h-4 w-4 ml-2" />
@@ -222,6 +228,16 @@ export function SourcesColumn({
               />
             ) : (
               <div className="space-y-2">
+                {/* Select-all row above the list, checkbox on the right (NotebookLM style) */}
+                {onBulkContextModeChange && (
+                  <label className="flex cursor-pointer items-center justify-end gap-3 px-3 py-2 text-sm text-muted-foreground">
+                    {t('sources.selectAll')}
+                    <Checkbox
+                      checked={allSelected}
+                      onCheckedChange={() => onBulkContextModeChange(allSelected ? 'exclude' : 'full')}
+                    />
+                  </label>
+                )}
                 {sources.map((source) => (
                   <SourceCard
                     key={source.id}

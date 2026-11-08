@@ -103,11 +103,10 @@ export function ChatPanel({
 
   return (
     <>
-    <Card className="flex flex-col h-full flex-1 overflow-hidden">
+    <Card className="flex flex-col h-full flex-1 overflow-hidden rounded-2xl bg-popover">
       <CardHeader className="pb-3 flex-shrink-0">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.13em] text-muted-foreground">
-            <span aria-hidden className="h-3.5 w-[3px] rounded-full bg-teal" />
+          <CardTitle className="flex items-center gap-2 text-lg font-normal text-foreground">
             {title || (contextType === 'source' ? t('chat.chatWith', { name: t('navigation.sources') }) : t('chat.chatWith', { name: t('common.notebook') }))}
           </CardTitle>
           {onSelectSession && onCreateSession && onDeleteSession && (
@@ -204,17 +203,6 @@ export function ChatPanel({
           </div>
         )}
 
-        {/* Notebook Context Indicator */}
-        {notebookContextStats && (
-          <ContextIndicator
-            sourcesInsights={notebookContextStats.sourcesInsights}
-            sourcesFull={notebookContextStats.sourcesFull}
-            notesCount={notebookContextStats.notesCount}
-            tokenCount={notebookContextStats.tokenCount}
-            charCount={notebookContextStats.charCount}
-          />
-        )}
-
         {/* Input Area */}
         <ChatComposer
           onSendMessage={onSendMessage}
@@ -222,6 +210,21 @@ export function ChatPanel({
           modelOverride={modelOverride}
           onModelChange={onModelChange}
         />
+
+        {/* Notebook Context Indicator, now below the input like NotebookLM's footer note */}
+        {notebookContextStats && (
+          <ContextIndicator
+            className="mx-4 mb-3 rounded-xl"
+            sourcesInsights={notebookContextStats.sourcesInsights}
+            sourcesFull={notebookContextStats.sourcesFull}
+            notesCount={notebookContextStats.notesCount}
+            tokenCount={notebookContextStats.tokenCount}
+            charCount={notebookContextStats.charCount}
+          />
+        )}
+        <p className="px-4 pb-3 text-center text-xs text-muted-foreground">
+            {t('chat.aiDisclaimer')}
+        </p>
       </CardContent>
     </Card>
 
@@ -271,20 +274,9 @@ function ChatComposer({
   const keyHint = isMac ? '⌘+Enter' : 'Ctrl+Enter'
 
   return (
-    <div className="flex-shrink-0 p-4 space-y-3 border-t">
-      {/* Model selector */}
-      {onModelChange && (
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">{t('chat.model')}</span>
-          <ModelSelector
-            currentModel={modelOverride}
-            onModelChange={onModelChange}
-            disabled={isStreaming}
-          />
-        </div>
-      )}
-
-      <div className="flex gap-2 items-end min-w-0">
+    <div className="flex-shrink-0 px-4 pb-2 pt-2">
+      {/* One pill holds the input, the model picker and the send button */}
+      <div className="flex min-w-0 items-end gap-2 rounded-3xl border bg-background py-1.5 pl-5 pr-1.5 shadow-sm focus-within:border-primary/50">
         <Textarea
           id={chatInputId}
           name="chat-message"
@@ -294,14 +286,23 @@ function ChatComposer({
           onKeyDown={handleKeyDown}
           placeholder={`${t('chat.sendPlaceholder')} (${t('chat.pressToSend', { key: keyHint })})`}
           disabled={isStreaming}
-          className="flex-1 min-h-[40px] max-h-[100px] resize-none py-2 px-3 min-w-0"
+          className="min-h-[40px] max-h-[100px] min-w-0 flex-1 resize-none border-0 bg-transparent px-0 py-2.5 shadow-none focus-visible:ring-0 dark:bg-transparent"
           rows={1}
         />
+        {onModelChange && (
+          <div className="shrink-0 self-center">
+            <ModelSelector
+              currentModel={modelOverride}
+              onModelChange={onModelChange}
+              disabled={isStreaming}
+            />
+          </div>
+        )}
         <Button
           onClick={handleSend}
           disabled={!input.trim() || isStreaming}
           size="icon"
-          className="h-[40px] w-[40px] flex-shrink-0"
+          className="h-10 w-10 shrink-0 rounded-full"
         >
           {isStreaming ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -342,11 +343,11 @@ const ChatMessage = memo(function ChatMessage({
       )}
       <div className="flex flex-col gap-2 max-w-[80%]">
         <div
-          className={`rounded-lg px-4 py-2 border ${
-            message.type === 'human'
-              ? 'bg-muted'
-              : 'bg-card'
-          }`}
+          className={`rounded-2xl px-4 py-2 ${
+              message.type === 'human'
+                ? 'bg-muted'
+                : 'bg-transparent'
+            }`}
         >
           {message.type === 'ai' ? (
             <AIMessageContent

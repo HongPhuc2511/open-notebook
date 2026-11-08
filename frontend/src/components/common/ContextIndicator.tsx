@@ -37,14 +37,14 @@ export function ContextIndicator({
 
   if (!hasContext) {
     return (
-      <div className={cn('flex-shrink-0 text-xs text-muted-foreground py-2 px-3 border-t', className)}>
-        No sources or notes included in context. Toggle icons on cards to include them.
+      <div className={cn('flex-shrink-0 text-xs text-muted-foreground py-2 px-4', className)}>
+        No sources or notes included in context. Tick a source to include it.
       </div>
     )
   }
 
   return (
-    <div className={cn('flex-shrink-0 flex items-center justify-between gap-2 py-2 px-3 border-t bg-muted/30', className)}>
+    <div className={cn('flex-shrink-0 flex items-center justify-between gap-2 py-2 px-4 bg-muted/30', className)}>
       <div className="flex items-center gap-2">
         <span className="text-xs font-medium text-muted-foreground">Context:</span>
 
