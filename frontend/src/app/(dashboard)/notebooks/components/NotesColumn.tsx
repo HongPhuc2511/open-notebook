@@ -13,11 +13,9 @@ import {
 import { Plus, StickyNote, Bot, User, MoreVertical, Trash2, ListChecks, ChevronDown } from 'lucide-react'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
-import { Badge } from '@/components/ui/badge'
 import { NoteEditorDialog } from './NoteEditorDialog'
 import { getDateLocale } from '@/lib/utils/date-locale'
 import { formatDistanceToNow } from 'date-fns'
-import { ContextToggle } from '@/components/common/ContextToggle'
 import type { NoteContextMode } from '../[id]/page'
 import type { NoteContextDefault } from '@/lib/utils/source-context'
 import { useDeleteNote } from '@/lib/hooks/use-notes'
@@ -25,6 +23,7 @@ import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { CollapsibleColumn, createCollapseButton } from '@/components/notebooks/CollapsibleColumn'
 import { useNotebookColumnsStore } from '@/lib/stores/notebook-columns-store'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { Checkbox } from '@/components/ui/checkbox'
 
 interface NotesColumnProps {
   notes?: NoteResponse[]
@@ -135,80 +134,71 @@ export function NotesColumn({
                 description={t('sources.createFirstNote')}
               />
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-1">
                 {notes.map((note) => (
                   <div
                     key={note.id}
-                    className="p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors group relative cursor-pointer"
+                    className="group relative flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-muted"
                     onClick={() => handleOpenEditor(note)}
                   >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        {note.note_type === 'ai' ? (
-                          <Bot className="h-4 w-4 text-teal" />
-                        ) : (
-                          <User className="h-4 w-4 text-muted-foreground" />
-                        )}
-                        <Badge variant="secondary" className="text-xs">
-                          {note.note_type === 'ai' ? t('common.aiGenerated') : t('common.human')}
-                        </Badge>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(new Date(note.updated), { 
-                            addSuffix: true,
-                            locale: getDateLocale(language)
-                          })}
-                        </span>
-
-                        {/* Context toggle - only show if handler provided */}
-                        {onContextModeChange && contextSelections?.[note.id] && (
-                          <div onClick={(event) => event.stopPropagation()}>
-                            <ContextToggle
-                              mode={contextSelections[note.id]}
-                              hasInsights={false}
-                              onChange={(mode) => onContextModeChange(note.id, mode)}
-                            />
-                          </div>
-                        )}
-
-                        {/* Ellipsis menu for delete action */}
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-48">
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleDeleteClick(note.id)
-                              }}
-                              className="text-destructive focus:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              {t('notebooks.deleteNote')}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
+                    {/* Type icon in a soft square, like Studio items in NotebookLM */}
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted group-hover:bg-background">
+                      {note.note_type === 'ai' ? (
+                        <Bot className="h-5 w-5 text-teal" />
+                      ) : (
+                        <User className="h-5 w-5 text-muted-foreground" />
+                      )}
                     </div>
 
-                    {note.title && (
-                      <h4 className="text-sm font-medium mb-2 break-all">{note.title}</h4>
-                    )}
-
-                    {note.content && (
-                      <p className="text-sm text-muted-foreground line-clamp-3 break-all">
-                        {note.content}
+                    {/* Title (falls back to the content when the note has no title) + subtitle */}
+                    <div className="min-w-0 flex-1">
+                      <h4 className="truncate text-sm font-medium">
+                        {note.title || note.content || ''}
+                      </h4>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {note.note_type === 'ai' ? t('common.aiGenerated') : t('common.human')}
+                        {' · '}
+                        {formatDistanceToNow(new Date(note.updated), {
+                          addSuffix: true,
+                          locale: getDateLocale(language)
+                        })}
                       </p>
+                    </div>
+
+                    {/* Overflow menu, visible on hover */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 shrink-0 p-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDeleteClick(note.id)
+                          }}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          {t('notebooks.deleteNote')}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    {/* Context checkbox: checked = included in chat ('full'), unchecked = 'off' */}
+                    {onContextModeChange && contextSelections?.[note.id] && (
+                      <Checkbox
+                        checked={contextSelections[note.id] !== 'off'}
+                        onCheckedChange={(checked) => onContextModeChange(note.id, checked ? 'full' : 'off')}
+                        onClick={(e) => e.stopPropagation()} // do not open the note editor
+                        aria-label="Include in chat context"
+                      />
                     )}
                   </div>
                 ))}

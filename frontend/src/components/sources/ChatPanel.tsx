@@ -203,17 +203,6 @@ export function ChatPanel({
           </div>
         )}
 
-        {/* Notebook Context Indicator */}
-        {notebookContextStats && (
-          <ContextIndicator
-            sourcesInsights={notebookContextStats.sourcesInsights}
-            sourcesFull={notebookContextStats.sourcesFull}
-            notesCount={notebookContextStats.notesCount}
-            tokenCount={notebookContextStats.tokenCount}
-            charCount={notebookContextStats.charCount}
-          />
-        )}
-
         {/* Input Area */}
         <ChatComposer
           onSendMessage={onSendMessage}
@@ -221,6 +210,18 @@ export function ChatPanel({
           modelOverride={modelOverride}
           onModelChange={onModelChange}
         />
+
+        {/* Notebook Context Indicator, now below the input like NotebookLM's footer note */}
+        {notebookContextStats && (
+          <ContextIndicator
+            className="mx-4 mb-3 rounded-xl"
+            sourcesInsights={notebookContextStats.sourcesInsights}
+            sourcesFull={notebookContextStats.sourcesFull}
+            notesCount={notebookContextStats.notesCount}
+            tokenCount={notebookContextStats.tokenCount}
+            charCount={notebookContextStats.charCount}
+          />
+        )}
       </CardContent>
     </Card>
 
@@ -270,20 +271,9 @@ function ChatComposer({
   const keyHint = isMac ? '⌘+Enter' : 'Ctrl+Enter'
 
   return (
-    <div className="flex-shrink-0 p-4 space-y-3">
-      {/* Model selector */}
-      {onModelChange && (
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">{t('chat.model')}</span>
-          <ModelSelector
-            currentModel={modelOverride}
-            onModelChange={onModelChange}
-            disabled={isStreaming}
-          />
-        </div>
-      )}
-
-      <div className="flex gap-2 items-end min-w-0">
+    <div className="flex-shrink-0 px-4 pb-2 pt-2">
+      {/* One pill holds the input, the model picker and the send button */}
+      <div className="flex min-w-0 items-end gap-2 rounded-3xl border bg-background py-1.5 pl-5 pr-1.5 shadow-sm focus-within:border-primary/50">
         <Textarea
           id={chatInputId}
           name="chat-message"
@@ -293,14 +283,23 @@ function ChatComposer({
           onKeyDown={handleKeyDown}
           placeholder={`${t('chat.sendPlaceholder')} (${t('chat.pressToSend', { key: keyHint })})`}
           disabled={isStreaming}
-          className="flex-1 min-h-[44px] max-h-[100px] resize-none rounded-3xl py-3 px-5 min-w-0"
+          className="min-h-[40px] max-h-[100px] min-w-0 flex-1 resize-none border-0 bg-transparent px-0 py-2.5 shadow-none focus-visible:ring-0 dark:bg-transparent"
           rows={1}
         />
+        {onModelChange && (
+          <div className="shrink-0 self-center">
+            <ModelSelector
+              currentModel={modelOverride}
+              onModelChange={onModelChange}
+              disabled={isStreaming}
+            />
+          </div>
+        )}
         <Button
           onClick={handleSend}
           disabled={!input.trim() || isStreaming}
           size="icon"
-          className="h-[44px] w-[44px] flex-shrink-0 rounded-full"
+          className="h-10 w-10 shrink-0 rounded-full"
         >
           {isStreaming ? (
             <Loader2 className="h-4 w-4 animate-spin" />
