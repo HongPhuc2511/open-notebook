@@ -446,7 +446,6 @@ export const itIT = {
     createToStart: "Crea una sessione per iniziare.",
     chatWithNotebook: "Chatta con il quaderno",
     unableToLoadChat: "Impossibile caricare la chat",
-    noDescription: "Nessuna descrizione",
     startByCreating: "Inizia creando il tuo primo quaderno per organizzare la tua ricerca.",
     messagesCount: "{{count}} messaggi",
     sessionCreated: "Sessione chat creata",

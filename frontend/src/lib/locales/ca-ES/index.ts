@@ -446,7 +446,6 @@ export const caES = {
     createToStart: "Crea una sessió per començar.",
     chatWithNotebook: "Xat amb el quadern",
     unableToLoadChat: "No es pot carregar el xat",
-    noDescription: "Sense descripció",
     startByCreating: "Comença creant el teu primer quadern per organitzar la teva recerca.",
     messagesCount: "{{count}} missatges",
     sessionCreated: "S'ha creat la sessió de xat",

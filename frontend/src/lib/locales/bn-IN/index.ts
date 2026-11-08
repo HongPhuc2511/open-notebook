@@ -446,7 +446,6 @@ export const bnIN = {
     createToStart: "শুরু করতে একটি সেশন তৈরি করুন।",
     chatWithNotebook: "নোটবুকের সাথে চ্যাট করুন",
     unableToLoadChat: "চ্যাট লোড করতে অক্ষম",
-    noDescription: "কোন বিবরণ নেই",
     startByCreating: "আপনার ঠৈ সাজানোর জন্য প্রথম নোটবুক তৈরি করে শুরু করুন।",
     messagesCount: "{{count}}টি বার্তা",
     sessionCreated: "চ্যাট সেশন তৈরি হয়েছে",

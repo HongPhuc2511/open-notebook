@@ -446,7 +446,6 @@ export const zhTW = {
     createToStart: "新增一個會話以開始。",
     chatWithNotebook: "與筆記本對話",
     unableToLoadChat: "無法載入聊天",
-    noDescription: "暫無描述",
     startByCreating: "從新增您的第一個筆記本開始，組織您的研究。",
     messagesCount: "{{count}} 條訊息",
     sessionCreated: "聊天會話已建立",

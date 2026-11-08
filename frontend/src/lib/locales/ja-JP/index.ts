@@ -446,7 +446,6 @@ export const jaJP = {
     createToStart: "セッションを作成して開始",
     chatWithNotebook: "ノートブックとチャット",
     unableToLoadChat: "チャットを読み込めません",
-    noDescription: "説明なし",
     startByCreating: "最初のノートブックを作成してリサーチを整理しましょう。",
     messagesCount: "{{count}}件のメッセージ",
     sessionCreated: "チャットセッションを作成しました",

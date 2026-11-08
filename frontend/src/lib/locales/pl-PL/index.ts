@@ -446,7 +446,6 @@ export const plPL = {
     createToStart: "Utwórz sesję, aby rozpocząć.",
     chatWithNotebook: "Czat z notatnikiem",
     unableToLoadChat: "Nie można załadować czatu",
-    noDescription: "Brak opisu",
     startByCreating: "Zacznij od utworzenia pierwszego notatnika, aby uporządkować swoje badania.",
     messagesCount: "Wiadomości: {{count}}",
     sessionCreated: "Utworzono sesję czatu",

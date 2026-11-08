@@ -446,7 +446,6 @@ export const esES = {
     createToStart: "Crea una sesión para comenzar.",
     chatWithNotebook: "Chat con cuaderno",
     unableToLoadChat: "No se pudo cargar el chat",
-    noDescription: "Sin descripción",
     startByCreating: "Comienza creando tu primer cuaderno para organizar tu investigación.",
     messagesCount: "{{count}} mensajes",
     sessionCreated: "Sesión de chat creada",

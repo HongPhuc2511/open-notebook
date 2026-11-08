@@ -446,7 +446,6 @@ export const ptBR = {
     createToStart: "Crie uma sessão para começar.",
     chatWithNotebook: "Conversar com Caderno",
     unableToLoadChat: "Não foi possível carregar o chat",
-    noDescription: "Sem descrição",
     startByCreating: "Comece criando seu primeiro caderno para organizar sua pesquisa.",
     messagesCount: "{{count}} mensagens",
     sessionCreated: "Sessão de chat criada",
