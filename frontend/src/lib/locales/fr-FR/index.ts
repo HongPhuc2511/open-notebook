@@ -446,7 +446,6 @@ export const frFR = {
     createToStart: "Créez une session pour commencer.",
     chatWithNotebook: "Discuter avec le Carnet",
     unableToLoadChat: "Impossible de charger le chat",
-    noDescription: "Aucune description",
     startByCreating: "Commencez par créer votre premier carnet pour organiser vos recherches.",
     messagesCount: "{{count}} messages",
     sessionCreated: "Session de chat créée",

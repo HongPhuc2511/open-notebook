@@ -25,7 +25,7 @@ export default function SourceDetailPage() {
   }, [navigation, router])
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen bg-muted/40">
       {/* Back button */}
       <div className="pt-6 pb-4 px-6">
         <Button
@@ -42,7 +42,7 @@ export default function SourceDetailPage() {
       {/* Main content: Source detail + Chat */}
       <div className="flex-1 grid gap-6 lg:grid-cols-[2fr_1fr] overflow-hidden px-6">
         {/* Left column - Source detail */}
-        <div className="overflow-y-auto px-4 pb-6">
+        <div className="mb-6 overflow-y-auto rounded-2xl bg-popover px-6 py-4">
           <SourceDetailContent
             sourceId={sourceId}
             showChatButton={false}
@@ -51,7 +51,7 @@ export default function SourceDetailPage() {
         </div>
 
         {/* Right column - Chat */}
-        <div className="overflow-y-auto px-4 pb-6">
+        <div className="overflow-y-auto pb-6">
           <ChatPanel
             messages={chat.messages}
             isStreaming={chat.isStreaming}

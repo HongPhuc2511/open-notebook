@@ -446,7 +446,6 @@ export const trTR = {
     createToStart: "Başlamak için bir oturum oluşturun.",
     chatWithNotebook: "Defter ile Sohbet Et",
     unableToLoadChat: "Sohbet yüklenemedi",
-    noDescription: "Açıklama yok",
     startByCreating: "Araştırmanızı düzenlemek için ilk defterinizi oluşturun.",
     messagesCount: "{{count}} mesaj",
     sessionCreated: "Sohbet oturumu oluşturuldu",

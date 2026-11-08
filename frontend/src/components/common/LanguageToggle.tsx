@@ -13,7 +13,7 @@ import { languages, type LanguageCode } from '@/lib/locales'
 
 // Every language registered in lib/locales is listed, so a new locale can't be
 // left out of the menu. Browser-detected codes ("pt", "zh-Hant") match by prefix.
-function isActive(code: LanguageCode, current: string): boolean {
+export function isActive(code: LanguageCode, current: string): boolean {
   if (code === 'zh-CN') return current === 'zh-CN' || current === 'zh' || current.startsWith('zh-Hans')
   if (code === 'zh-TW') return current === 'zh-TW' || current.startsWith('zh-Hant')
   return current === code || current.startsWith(code.split('-')[0])

@@ -449,7 +449,6 @@ export const deDE = {
     createToStart: "Erstelle eine Sitzung, um zu starten.",
     chatWithNotebook: "Mit Notebook chatten",
     unableToLoadChat: "Chat konnte nicht geladen werden",
-    noDescription: "Keine Beschreibung",
     startByCreating: "Erstelle zuerst dein erstes Notebook, um deine Recherche zu organisieren.",
     messagesCount: "{{count}} Nachrichten",
     sessionCreated: "Chat-Sitzung erstellt",

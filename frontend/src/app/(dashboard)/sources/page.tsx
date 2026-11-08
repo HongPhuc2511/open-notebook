@@ -316,30 +316,30 @@ export default function SourcesPage() {
     }
 
     return (<>
-      <div className="flex flex-col h-full w-full max-w-none px-6 py-6">
+      <div className="flex flex-col h-full w-full max-w-none bg-muted/40 px-6 py-6">
         <div className="mb-6 flex-shrink-0">
-          <h1 className="font-display text-2xl font-bold tracking-tight">{t('sources.allSources')}</h1>
+          <h1 className="text-2xl font-normal tracking-tight">{t('sources.allSources')}</h1>
           <p className="mt-2 text-muted-foreground">
             {t('sources.allSourcesDesc')}
           </p>
         </div>
 
-        <div ref={scrollContainerRef} className="flex-1 rounded-md border overflow-auto">
+        <div ref={scrollContainerRef} className="flex-1 overflow-auto rounded-2xl bg-popover">
           <table
             ref={tableRef}
             tabIndex={0}
-            className="w-full min-w-[920px] outline-none table-fixed"
+            className="w-full min-w-[1040px] outline-none table-fixed"
           >
             <colgroup>
               <col className="w-[120px]" />
               <col className="w-auto" />
+              <col className="w-[160px]" />
+              <col className="w-[160px]" />
+              <col className="w-[110px]" />
               <col className="w-[140px]" />
-              <col className="w-[140px]" />
-              <col className="w-[100px]" />
-              <col className="w-[100px]" />
-              <col className="w-[100px]" />
+              <col className="w-[90px]" />
             </colgroup>
-            <thead className="sticky top-0 bg-background z-10">
+            <thead className="sticky top-0 z-10 bg-popover">
               <tr className="border-b">
                 <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
                   {renderSortableHeader('type', t('common.type'))}
@@ -400,13 +400,13 @@ export default function SourcesPage() {
                       )}
                     </div>
                   </td>
-                  <td className="h-12 px-4 text-muted-foreground text-sm hidden sm:table-cell">
+                  <td className="h-12 whitespace-nowrap px-4 text-muted-foreground text-sm hidden sm:table-cell">
                     {formatDistanceToNow(new Date(source.created), { 
                       addSuffix: true,
                       locale: getDateLocale(language)
                     })}
                   </td>
-                  <td className="h-12 px-4 text-muted-foreground text-sm hidden sm:table-cell">
+                  <td className="h-12 whitespace-nowrap px-4 text-muted-foreground text-sm hidden sm:table-cell">
                     {formatDistanceToNow(new Date(source.updated), {
                       addSuffix: true,
                       locale: getDateLocale(language)
@@ -418,7 +418,7 @@ export default function SourcesPage() {
                   <td className="h-12 px-4 text-center hidden lg:table-cell">
                     <span
                       className={cn(
-                        "inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-medium",
+                        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
                         source.embedded
                           ? "bg-fern-tint text-fern-deep dark:text-fern"
                           : "bg-muted text-muted-foreground"

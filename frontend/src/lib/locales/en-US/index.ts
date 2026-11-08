@@ -444,7 +444,6 @@ export const enUS = {
     createToStart: "Create a session to start.",
     chatWithNotebook: "Chat with Notebook",
     unableToLoadChat: "Unable to load chat",
-    noDescription: "No description",
     startByCreating: "Start by creating your first notebook to organize your research.",
     messagesCount: "{{count}} messages",
     sessionCreated: "Chat session created",

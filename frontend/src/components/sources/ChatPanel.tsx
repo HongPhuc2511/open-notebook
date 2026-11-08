@@ -290,7 +290,7 @@ function ChatComposer({
           rows={1}
         />
         {onModelChange && (
-          <div className="shrink-0 self-center">
+          <div className="shrink-0 self-center" title={t('chat.model')}>
             <ModelSelector
               currentModel={modelOverride}
               onModelChange={onModelChange}

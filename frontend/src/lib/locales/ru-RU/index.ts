@@ -446,7 +446,6 @@ export const ruRU = {
     createToStart: "Создайте сессию для начала.",
     chatWithNotebook: "Чат с блокнотом",
     unableToLoadChat: "Не удалось загрузить чат",
-    noDescription: "Без описания",
     startByCreating: "Начните с создания первого блокнота для организации исследований.",
     messagesCount: "Сообщений: {{count}}",
     sessionCreated: "Сессия чата создана",

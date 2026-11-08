@@ -2,11 +2,11 @@
 
 import { useRouter } from 'next/navigation'
 import { NotebookResponse } from '@/lib/types/api'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { MoreHorizontal, Archive, ArchiveRestore, Trash2, FileText, StickyNote, BookOpen } from 'lucide-react'
-import { formatDistanceToNow } from 'date-fns'
+import { MoreVertical, Archive, ArchiveRestore, Trash2, FileText, StickyNote, BookOpen } from 'lucide-react'
+import { format } from 'date-fns'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,7 +43,7 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
   return (
     <>
       <Card
-        className="group card-hover min-h-[220px] justify-between gap-4 py-5"
+        className="group card-hover min-h-[220px] justify-between gap-4 rounded-3xl border-0 py-5 shadow-none"
         onClick={handleCardClick}
         style={{ cursor: 'pointer' }}
       >
@@ -61,10 +61,10 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100"
+                  className="text-muted-foreground"
                   onClick={(e) => e.stopPropagation()}
-                >
-                  <MoreHorizontal className="h-4 w-4" />
+                  >
+                    <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
@@ -98,7 +98,7 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
 
         <CardContent className="space-y-3">
           <div className="min-w-0">
-            <CardTitle className="line-clamp-2 text-xl font-normal leading-snug">
+            <CardTitle className="line-clamp-2 text-2xl font-normal leading-snug">
               {notebook.name}
             </CardTitle>
             {notebook.archived && (
@@ -108,16 +108,9 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
             )}
           </div>
 
-          <CardDescription className="line-clamp-2 text-sm">
-            {notebook.description || t('chat.noDescription')}
-          </CardDescription>
-
           <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
             <span className="truncate">
-              {t('common.updated', { time: formatDistanceToNow(new Date(notebook.updated), {
-                addSuffix: true,
-                locale: getDateLocale(language)
-              }) })}
+              {format(new Date(notebook.updated), 'PP', { locale: getDateLocale(language) })}
             </span>
             <span className="flex shrink-0 items-center gap-3">
               <span className="flex items-center gap-1">
