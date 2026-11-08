@@ -169,13 +169,12 @@ export function SourcesColumn({
                 
                 {t('navigation.sources')}
               </CardTitle>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 {onBulkContextModeChange && sources && sources.length > 0 && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="text-muted-foreground" title={t('sources.bulkContext')}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" title={t('sources.bulkContext')}>
                         <ListChecks className="h-4 w-4" />
-                        <ChevronDown className="h-4 w-4 ml-1" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
@@ -193,10 +192,10 @@ export function SourcesColumn({
                 )}
                 <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
                   <DropdownMenuTrigger asChild>
-                    <Button size="sm" variant="tonal" className="rounded-full">
-                      <Plus className="h-4 w-4 mr-2" />
-                      {t('sources.addSource')}
-                      <ChevronDown className="h-4 w-4 ml-2" />
+                    <Button size="sm" variant="tonal" className="rounded-full px-3" title={t('sources.addSource')}>
+                      <Plus className="h-4 w-4" />
+                      <span className="sr-only">{t('sources.addSource')}</span>
+                      <ChevronDown className="ml-1 h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
