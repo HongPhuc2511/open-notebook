@@ -4,9 +4,8 @@ import { useMemo, useState } from 'react'
 
 import { AppShell } from '@/components/layout/AppShell'
 import { NotebookList } from './components/NotebookList'
-import { RecentlyViewed } from './components/RecentlyViewed'
 import { Button } from '@/components/ui/button'
-import { Plus, RefreshCw, LayoutGrid, List } from 'lucide-react'
+import { LayoutGrid, List } from 'lucide-react'
 import { useNotebooks } from '@/lib/hooks/use-notebooks'
 import { CreateNotebookDialog } from '@/components/notebooks/CreateNotebookDialog'
 import { Input } from '@/components/ui/input'
@@ -19,7 +18,7 @@ export default function NotebooksPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const viewMode = useNotebookViewStore((state) => state.viewMode)
   const setViewMode = useNotebookViewStore((state) => state.setViewMode)
-  const { data: notebooks, isLoading, refetch } = useNotebooks(false)
+  const { data: notebooks, isLoading } = useNotebooks(false)
   const { data: archivedNotebooks } = useNotebooks(true)
 
   const normalizedQuery = searchTerm.trim().toLowerCase()
@@ -51,62 +50,54 @@ export default function NotebooksPage() {
   const hasArchived = (archivedNotebooks?.length ?? 0) > 0
   const isSearching = normalizedQuery.length > 0
 
-  return (
-    <AppShell>
-      <div className="flex-1 overflow-y-auto">
-        <div className="p-8 space-y-8">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <h1 className="text-3xl font-normal tracking-tight">{t('notebooks.title')}</h1>
-            <Button variant="ghost" size="icon" onClick={() => refetch()}>
-              <RefreshCw className="h-4 w-4" />
-            </Button>
-          </div>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-            <div className="flex items-center rounded-full bg-muted p-1">
-              <Button
-                variant={viewMode === 'tile' ? 'tonal' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('tile')}
-                aria-label={t('notebooks.tileView')}
-                aria-pressed={viewMode === 'tile'}
-                title={t('notebooks.tileView')}
-              >
-                <LayoutGrid className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === 'list' ? 'tonal' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('list')}
-                aria-label={t('notebooks.listView')}
-                aria-pressed={viewMode === 'list'}
-                title={t('notebooks.listView')}
-              >
-                <List className="h-4 w-4" />
-              </Button>
-            </div>
-            <Input
-              id="notebook-search"
-              name="notebook-search"
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder={t('notebooks.searchPlaceholder')}
-              autoComplete="off"
-              aria-label={t('common.accessibility.searchNotebooks') || "Search notebooks"}
-              className="w-full sm:w-64"
-            />
-            <Button variant="tonal" onClick={() => setCreateDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              {t('notebooks.newNotebook')}
-            </Button>
-          </div>
-        </div>
-        
-        <div className="space-y-8">
-          <RecentlyViewed />
+  // Search and view switch live in the shared top bar, next to the create button
+  const topBarActions = (
+    <>
+      <Input
+        id="notebook-search"
+        name="notebook-search"
+        value={searchTerm}
+        onChange={(event) => setSearchTerm(event.target.value)}
+        placeholder={t('notebooks.searchPlaceholder')}
+        autoComplete="off"
+        aria-label={t('common.accessibility.searchNotebooks') || 'Search notebooks'}
+        className="w-32 rounded-full sm:w-48 lg:w-64"
+      />
+      {/* Tile / list switch, hidden on very small screens */}
+      <div className="hidden shrink-0 items-center rounded-full bg-muted p-1 sm:flex">
+        <Button
+          variant={viewMode === 'tile' ? 'tonal' : 'ghost'}
+          size="sm"
+          onClick={() => setViewMode('tile')}
+          aria-label={t('notebooks.tileView')}
+          aria-pressed={viewMode === 'tile'}
+          title={t('notebooks.tileView')}
+        >
+          <LayoutGrid className="h-4 w-4" />
+        </Button>
+        <Button
+          variant={viewMode === 'list' ? 'tonal' : 'ghost'}
+          size="sm"
+          onClick={() => setViewMode('list')}
+          aria-label={t('notebooks.listView')}
+          aria-pressed={viewMode === 'list'}
+          title={t('notebooks.listView')}
+        >
+          <List className="h-4 w-4" />
+        </Button>
+      </div>
+    </>
+  )
 
-          <NotebookList 
-            notebooks={filteredActive} 
+  return (
+    <AppShell topBarActions={topBarActions}>
+      <div className="flex-1 overflow-y-auto">
+        <div className="space-y-8 px-8 py-6">
+          {/* The top bar tab already names the page; keep the title for screen readers */}
+          <h1 className="sr-only">{t('notebooks.title')}</h1>
+
+          <NotebookList
+            notebooks={filteredActive}
             isLoading={isLoading}
             title={t('notebooks.activeNotebooks')}
             emptyTitle={isSearching ? t('common.noMatches') : undefined}
@@ -114,10 +105,10 @@ export default function NotebooksPage() {
             onAction={!isSearching ? () => setCreateDialogOpen(true) : undefined}
             actionLabel={!isSearching ? t('notebooks.newNotebook') : undefined}
           />
-          
+
           {hasArchived && (
-            <NotebookList 
-              notebooks={filteredArchived} 
+            <NotebookList
+              notebooks={filteredArchived}
               isLoading={false}
               title={t('notebooks.archivedNotebooks')}
               collapsible
@@ -125,7 +116,6 @@ export default function NotebooksPage() {
               emptyDescription={isSearching ? t('common.tryDifferentSearch') : undefined}
             />
           )}
-        </div>
         </div>
       </div>
 
