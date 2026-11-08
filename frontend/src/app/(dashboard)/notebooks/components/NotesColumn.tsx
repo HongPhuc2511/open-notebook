@@ -92,7 +92,7 @@ export function NotesColumn({
           <CardHeader className="pb-3 flex-shrink-0">
             <div className="flex items-center justify-between gap-2">
               <CardTitle className="flex items-center gap-2 text-lg font-normal text-foreground">
-                {notesLabel}
+                {t('notebooks.studioTitle')}
               </CardTitle>
               <div className="flex items-center gap-2">
                 {onBulkContextModeChange && notes && notes.length > 0 && (
@@ -153,7 +153,7 @@ export function NotesColumn({
                     {/* Title (falls back to the content when the note has no title) + subtitle */}
                     <div className="min-w-0 flex-1">
                       <h4 className="truncate text-sm font-medium">
-                        {note.title || note.content || ''}
+                        {note.title || note.content || t('sources.untitledNote')}
                       </h4>
                       <p className="truncate text-xs text-muted-foreground">
                         {note.note_type === 'ai' ? t('common.aiGenerated') : t('common.human')}

@@ -222,6 +222,9 @@ export function ChatPanel({
             charCount={notebookContextStats.charCount}
           />
         )}
+        <p className="px-4 pb-3 text-center text-xs text-muted-foreground">
+            {t('chat.aiDisclaimer')}
+        </p>
       </CardContent>
     </Card>
 
