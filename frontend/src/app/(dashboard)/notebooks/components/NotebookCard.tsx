@@ -2,11 +2,11 @@
 
 import { useRouter } from 'next/navigation'
 import { NotebookResponse } from '@/lib/types/api'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { MoreVertical, Archive, ArchiveRestore, Trash2, FileText, StickyNote, BookOpen } from 'lucide-react'
-import { formatDistanceToNow } from 'date-fns'
+import { format } from 'date-fns'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -108,18 +108,9 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
             )}
           </div>
 
-          {notebook.description && (
-            <CardDescription className="line-clamp-2 text-sm">
-              {notebook.description}
-            </CardDescription>
-          )}
-
           <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
             <span className="truncate">
-              {t('common.updated', { time: formatDistanceToNow(new Date(notebook.updated), {
-                addSuffix: true,
-                locale: getDateLocale(language)
-              }) })}
+              {format(new Date(notebook.updated), 'PP', { locale: getDateLocale(language) })}
             </span>
             <span className="flex shrink-0 items-center gap-3">
               <span className="flex items-center gap-1">

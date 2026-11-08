@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { NotebookResponse } from '@/lib/types/api'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { MoreHorizontal, Archive, ArchiveRestore, Trash2, FileText, StickyNote } from 'lucide-react'
+import { MoreVertical, Archive, ArchiveRestore, Trash2, FileText, StickyNote, BookOpen } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import {
   DropdownMenu,
@@ -51,6 +51,12 @@ export function NotebookRow({ notebook }: NotebookRowProps) {
         onClick={handleRowClick}
         style={{ cursor: 'pointer' }}
       >
+        <span
+          aria-hidden
+          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-popover text-teal"
+        >
+          <BookOpen className="h-4 w-4" />
+        </span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <Link
@@ -97,10 +103,10 @@ export function NotebookRow({ notebook }: NotebookRowProps) {
               aria-label={t('common.actions')}
               variant="ghost"
               size="icon"
-              className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 transition-opacity shrink-0"
+              className="shrink-0 text-muted-foreground"
               onClick={(e) => e.stopPropagation()}
-            >
-              <MoreHorizontal className="h-4 w-4" />
+              >
+                <MoreVertical className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
