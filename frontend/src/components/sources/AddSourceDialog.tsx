@@ -26,6 +26,7 @@ import { useCreateSource } from '@/lib/hooks/use-sources'
 import { useSettings } from '@/lib/hooks/use-settings'
 import { CreateSourceRequest } from '@/lib/types/api'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { WizardStep } from '../ui/wizard-container'
 
 const MAX_BATCH_SIZE = 50
 
