@@ -78,7 +78,7 @@ export default function ApiKeysPage() {
   if (isLoading) {
     return (
       <AppShell>
-        <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex min-h-[60vh] items-center justify-center px-4 py-12">
           <LoadingSpinner size="lg" />
         </div>
       </AppShell>
@@ -88,15 +88,19 @@ export default function ApiKeysPage() {
   return (
     <AppShell>
       <div className="flex-1 overflow-y-auto">
-        <div className="p-6 space-y-6">
+        <div className="mx-auto w-full max-w-6xl space-y-7 px-4 py-6 md:px-8 md:py-8">
           {/* Header */}
-          <div>
-            <h1 className="font-display text-2xl font-bold tracking-tight flex items-center gap-2">
-              <Key className="h-5 w-5 text-muted-foreground" />
-              {t('apiKeys.title')}
-            </h1>
-            <p className="text-muted-foreground mt-1">{t('apiKeys.description')}</p>
-          </div>
+          <header className="flex items-start gap-4 border-b border-border/60 pb-5">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <Key className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 space-y-1">
+              <h1 className="font-display text-2xl font-semibold tracking-tight md:text-3xl">
+                {t('apiKeys.title')}
+              </h1>
+              <p className="max-w-3xl text-sm leading-6 text-muted-foreground md:text-base">{t('apiKeys.description')}</p>
+            </div>
+          </header>
 
           {/* Encryption warning */}
           {!encryptionReady && (
@@ -127,7 +131,7 @@ export default function ApiKeysPage() {
               <AlertDescription>{t('apiKeys.providersLoadFailedDescription')}</AlertDescription>
             </Alert>
           ) : (
-            <div className="grid gap-4">
+            <div className="grid gap-4" aria-label={t('apiKeys.title')}>
               {sortedProviders.map(provider => (
                 <ProviderSection
                   key={provider.name}
@@ -143,12 +147,12 @@ export default function ApiKeysPage() {
           )}
 
           {/* Help link */}
-          <div className="border-t pt-4">
+          <div className="border-t border-border/60 pt-5">
             <a
               href="https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/ai-providers.md"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm text-primary hover:underline"
+              className="inline-flex min-h-10 items-center text-sm font-medium text-primary underline-offset-4 transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               {t('apiKeys.learnMore')}
             </a>

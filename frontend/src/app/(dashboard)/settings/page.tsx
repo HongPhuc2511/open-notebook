@@ -14,14 +14,14 @@ export default function SettingsPage() {
   return (
     <AppShell>
       <div className="flex-1 overflow-y-auto">
-        <div className="p-6">
-          <div className="max-w-4xl">
-            <div className="flex items-center gap-4 mb-6">
-              <h1 className="font-display text-2xl font-bold tracking-tight">{t('navigation.settings')}</h1>
-              <Button variant="outline" size="sm" onClick={() => refetch()}>
+        <div className="mx-auto w-full max-w-5xl px-4 py-6 md:px-8 md:py-8">
+          <div className="space-y-7">
+            <header className="flex flex-wrap items-center justify-between gap-4 border-b border-border/60 pb-5">
+              <h1 className="font-display text-2xl font-semibold tracking-tight md:text-3xl">{t('navigation.settings')}</h1>
+              <Button variant="outline" size="icon" onClick={() => refetch()} className="h-10 w-10 rounded-xl" title={t('common.refresh')}>
                 <RefreshCw className="h-4 w-4" />
               </Button>
-            </div>
+            </header>
 
             <SettingsForm />
           </div>

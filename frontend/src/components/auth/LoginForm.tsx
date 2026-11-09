@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -7,56 +8,77 @@ import { useAuthStore } from '@/lib/stores/auth-store'
 import { getConfig } from '@/lib/config'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { AlertCircle } from 'lucide-react'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import {
+  AlertCircle,
+  Eye,
+  EyeOff,
+  LockKeyhole,
+  BookOpen,
+  LoaderCircle,
+} from 'lucide-react'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { useTranslation } from '@/lib/hooks/use-translation'
 
 export function LoginForm() {
   const { t, language } = useTranslation()
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+
   const { login, isLoading, error } = useAuth()
-  const { authRequired, checkAuthRequired, hasHydrated, isAuthenticated } = useAuthStore()
+  const {
+    authRequired,
+    checkAuthRequired,
+    hasHydrated,
+    isAuthenticated,
+  } = useAuthStore()
+
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
-  const [configInfo, setConfigInfo] = useState<{ apiUrl: string; version: string; buildTime: string } | null>(null)
+  const [configInfo, setConfigInfo] = useState<{
+    apiUrl: string
+    version: string
+    buildTime: string
+  } | null>(null)
+
   const router = useRouter()
 
-  // Load config info for debugging
   useEffect(() => {
-    getConfig().then(cfg => {
-      setConfigInfo({
-        apiUrl: cfg.apiUrl,
-        version: cfg.version,
-        buildTime: cfg.buildTime,
+    getConfig()
+      .then((cfg) => {
+        setConfigInfo({
+          apiUrl: cfg.apiUrl,
+          version: cfg.version,
+          buildTime: cfg.buildTime,
+        })
       })
-    }).catch(err => {
-      console.error('Failed to load config:', err)
-    })
+      .catch((err) => {
+        console.error('Failed to load config:', err)
+      })
   }, [])
 
-  // Check if authentication is required on mount
   useEffect(() => {
-    if (!hasHydrated) {
-      return
-    }
+    if (!hasHydrated) return
 
     const checkAuth = async () => {
       try {
         const required = await checkAuthRequired()
 
-        // If auth is not required, redirect to notebooks
         if (!required) {
           router.push('/notebooks')
         }
       } catch (error) {
         console.error('Error checking auth requirement:', error)
-        // On error, assume auth is required to be safe
       } finally {
         setIsCheckingAuth(false)
       }
     }
 
-    // If we already know auth status, use it
     if (authRequired !== null) {
       if (!authRequired && isAuthenticated) {
         router.push('/notebooks')
@@ -66,122 +88,224 @@ export function LoginForm() {
     } else {
       void checkAuth()
     }
-  }, [hasHydrated, authRequired, checkAuthRequired, router, isAuthenticated])
+  }, [
+    hasHydrated,
+    authRequired,
+    checkAuthRequired,
+    router,
+    isAuthenticated,
+  ])
 
-  // Show loading while checking if auth is required
   if (!hasHydrated || isCheckingAuth) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <LoadingSpinner />
       </div>
     )
   }
 
-  // If we still don't know if auth is required (connection error), show error
   if (authRequired === null) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle>{t('common.connectionError')}</CardTitle>
-            <CardDescription>
-              {t('common.unableToConnect')}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-start gap-2 text-destructive text-sm">
-                <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                <div className="flex-1">
-                  {error || t('auth.connectErrorHint')}
-                </div>
-              </div>
-
-              {configInfo && (
-                <div className="space-y-2 text-xs text-muted-foreground border-t pt-3">
-                  <div className="font-medium">{t('common.diagnosticInfo')}:</div>
-                  <div className="space-y-1 font-mono">
-                    <div>{t('common.version')}: {configInfo.version}</div>
-                    <div>{t('common.built')}: {new Date(configInfo.buildTime).toLocaleString(language === 'zh-CN' ? 'zh-CN' : language === 'zh-TW' ? 'zh-TW' : 'en-US')}</div>
-                    <div className="break-all">{t('common.apiUrl')}: {configInfo.apiUrl}</div>
-                    <div className="break-all">{t('common.frontendUrl')}: {typeof window !== 'undefined' ? window.location.href : 'N/A'}</div>
-                  </div>
-                  <div className="text-xs pt-2">
-                    {t('common.checkConsoleLogs')}
-                  </div>
-                </div>
-              )}
-
-              <Button
-                onClick={() => window.location.reload()}
-                className="w-full"
-              >
-                {t('common.retryConnection')}
-              </Button>
+      <main className="flex min-h-screen items-center justify-center bg-background px-4 py-8">
+        <Card className="w-full max-w-md overflow-hidden border border-border/70 shadow-xl shadow-black/[0.03]">
+          <CardHeader className="items-center space-y-3 px-7 pt-9 text-center sm:px-9">
+            <div className="flex size-14 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
+              <AlertCircle className="size-7" />
             </div>
+
+            <div className="space-y-2">
+              <CardTitle className="text-xl font-semibold tracking-tight">
+                {t('common.connectionError')}
+              </CardTitle>
+              <CardDescription className="leading-relaxed">
+                {t('common.unableToConnect')}
+              </CardDescription>
+            </div>
+          </CardHeader>
+
+          <CardContent className="space-y-5 px-7 pb-8 sm:px-9">
+            <div className="flex items-start gap-3 rounded-2xl border border-destructive/20 bg-destructive/5 p-4 text-sm text-destructive">
+              <AlertCircle className="mt-0.5 size-4 shrink-0" />
+              <div className="min-w-0 flex-1 break-words">
+                {error || t('auth.connectErrorHint')}
+              </div>
+            </div>
+
+            {configInfo && (
+              <div className="space-y-3 rounded-2xl bg-muted/50 p-4 text-xs text-muted-foreground">
+                <div className="font-semibold text-foreground">
+                  {t('common.diagnosticInfo')}
+                </div>
+
+                <div className="space-y-2 font-mono">
+                  <div>
+                    {t('common.version')}: {configInfo.version}
+                  </div>
+                  <div>
+                    {t('common.built')}:{' '}
+                    {new Date(configInfo.buildTime).toLocaleString(
+                      language === 'zh-CN'
+                        ? 'zh-CN'
+                        : language === 'zh-TW'
+                          ? 'zh-TW'
+                          : 'en-US'
+                    )}
+                  </div>
+                  <div className="break-all">
+                    {t('common.apiUrl')}: {configInfo.apiUrl}
+                  </div>
+                  <div className="break-all">
+                    {t('common.frontendUrl')}:{' '}
+                    {typeof window !== 'undefined'
+                      ? window.location.href
+                      : 'N/A'}
+                  </div>
+                </div>
+
+                <p>{t('common.checkConsoleLogs')}</p>
+              </div>
+            )}
+
+            <Button
+              onClick={() => window.location.reload()}
+              className="h-11 w-full"
+            >
+              {t('common.retryConnection')}
+            </Button>
           </CardContent>
         </Card>
-      </div>
+      </main>
     )
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
     if (password.trim()) {
       try {
         await login(password)
       } catch (error) {
         console.error('Unhandled error during login:', error)
-        // The auth store should handle most errors, but this catches any unhandled ones
       }
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle>{t('auth.loginTitle')}</CardTitle>
-          <CardDescription>
-            {t('auth.loginDesc')}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Input
-                type="password"
-                placeholder={t('auth.passwordPlaceholder')}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={isLoading}
-              />
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 py-10">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 overflow-hidden"
+      >
+        <div className="absolute -left-32 -top-32 size-80 rounded-full bg-primary/[0.04] blur-3xl" />
+        <div className="absolute -bottom-40 -right-32 size-96 rounded-full bg-primary/[0.05] blur-3xl" />
+      </div>
+
+      <div className="relative z-10 w-full max-w-md">
+        <Card className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-xl shadow-black/[0.04]">
+          <CardHeader className="items-center space-y-5 px-7 pb-5 pt-10 text-center sm:px-9">
+            <div className="flex size-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
+              <BookOpen className="size-8" strokeWidth={1.8} />
             </div>
 
-            {error && (
-              <div className="flex items-center gap-2 text-destructive text-sm">
-                <AlertCircle className="h-4 w-4" />
-                {error}
-              </div>
-            )}
+            <div className="space-y-2">
+              <p className="text-sm font-semibold tracking-wide text-primary">
+                Open Notebook
+              </p>
 
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isLoading || !password.trim()}
-            >
-              {isLoading ? t('auth.signingIn') : t('auth.signIn')}
-            </Button>
+              <CardTitle className="text-2xl font-semibold tracking-tight sm:text-3xl">
+                {t('auth.loginTitle')}
+              </CardTitle>
 
-            {configInfo && (
-              <div className="text-xs text-center text-muted-foreground pt-2 border-t">
-                <div>{t('common.version')} {configInfo.version}</div>
-                <div className="font-mono text-[10px]">{configInfo.apiUrl}</div>
+              <CardDescription className="mx-auto max-w-xs leading-relaxed">
+                {t('auth.loginDesc')}
+              </CardDescription>
+            </div>
+          </CardHeader>
+
+          <CardContent className="px-7 pb-9 sm:px-9">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="space-y-2">
+                <label
+                  htmlFor="login-password"
+                  className="text-sm font-medium"
+                >
+                  {t('auth.passwordPlaceholder')}
+                </label>
+
+                <div className="relative">
+                  <LockKeyhole className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+
+                  <Input
+                    id="login-password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder={t('auth.passwordPlaceholder')}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={isLoading}
+                    autoComplete="current-password"
+                    aria-invalid={Boolean(error)}
+                    className="h-12 rounded-full pl-11 pr-12"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((value) => !value)}
+                    disabled={isLoading}
+                    aria-label={
+                      showPassword ? 'Hide password' : 'Show password'
+                    }
+                    aria-pressed={showPassword}
+                    className="absolute right-3 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="size-4" />
+                    ) : (
+                      <Eye className="size-4" />
+                    )}
+                  </button>
+                </div>
               </div>
-            )}
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+
+              {error && (
+                <div
+                  role="alert"
+                  className="flex items-start gap-3 rounded-xl border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive"
+                >
+                  <AlertCircle className="mt-0.5 size-4 shrink-0" />
+                  <span className="min-w-0 break-words">{error}</span>
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                className="h-12 w-full text-sm font-semibold shadow-sm"
+                disabled={isLoading || !password.trim()}
+              >
+                {isLoading ? (
+                  <>
+                    <LoaderCircle className="size-4 animate-spin" />
+                    {t('auth.signingIn')}
+                  </>
+                ) : (
+                  t('auth.signIn')
+                )}
+              </Button>
+
+              {configInfo && (
+                <div className="space-y-1 border-t border-border/70 pt-4 text-center text-xs text-muted-foreground">
+                  <p>
+                    Open Notebook · {t('common.version')}{' '}
+                    {configInfo.version}
+                  </p>
+                  <p className="break-all font-mono text-[10px] opacity-75">
+                    {configInfo.apiUrl}
+                  </p>
+                </div>
+              )}
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    </main>
   )
 }
