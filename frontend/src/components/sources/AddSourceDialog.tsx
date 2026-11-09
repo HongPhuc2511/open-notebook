@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { LoaderIcon, CheckCircleIcon, XCircleIcon } from 'lucide-react'
+import { LoaderIcon, CheckCircleIcon, XCircleIcon, ChevronDownIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   Dialog,
@@ -14,7 +14,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { WizardContainer, WizardStep } from '@/components/ui/wizard-container'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { SourceTypeStep, parseAndValidateUrls } from './steps/SourceTypeStep'
 import { NotebooksStep } from './steps/NotebooksStep'
 import { ProcessingStep } from './steps/ProcessingStep'
@@ -99,7 +101,6 @@ export function AddSourceDialog({
   ]
 
   // Simplified state management
-  const [currentStep, setCurrentStep] = useState(1)
   const [processing, setProcessing] = useState(false)
   const [processingStatus, setProcessingStatus] = useState<ProcessingState | null>(null)
   const [selectedNotebooks, setSelectedNotebooks] = useState<string[]>(
@@ -132,6 +133,7 @@ export function AddSourceDialog({
   } = useForm<CreateSourceFormData>({
     resolver: zodResolver(createSourceSchema),
     defaultValues: {
+      type: 'upload',
       notebooks: defaultNotebookId ? [defaultNotebookId] : [],
       embed: settings?.default_embedding_option === 'always' || settings?.default_embedding_option === 'ask',
       async_processing: true,
@@ -153,6 +155,7 @@ export function AddSourceDialog({
                          (settings.default_embedding_option === 'ask')
 
       reset({
+        type: 'upload',
         notebooks: defaultNotebookId ? [defaultNotebookId] : [],
         embed: embedValue,
         async_processing: true,
@@ -242,43 +245,9 @@ export function AddSourceDialog({
     }
   }
 
-  // Navigation
-  const handleNextStep = (e?: React.MouseEvent) => {
-    e?.preventDefault()
-    e?.stopPropagation()
-
-    // Validate URLs when leaving step 1 in link mode
-    if (currentStep === 1 && selectedType === 'link' && watchedUrl) {
-      const { invalid } = parseAndValidateUrls(watchedUrl)
-      if (invalid.length > 0) {
-        setUrlValidationErrors(invalid)
-        return
-      }
-      setUrlValidationErrors([])
-    }
-
-    if (currentStep < 3 && isStepValid(currentStep)) {
-      setCurrentStep(currentStep + 1)
-    }
-  }
-
-  // Clear URL validation errors when user edits
+    // Clear URL validation errors when user edits
   const handleClearUrlErrors = () => {
     setUrlValidationErrors([])
-  }
-
-  const handlePrevStep = (e?: React.MouseEvent) => {
-    e?.preventDefault()
-    e?.stopPropagation()
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1)
-    }
-  }
-
-  const handleStepClick = (step: number) => {
-    if (step <= currentStep || (step === currentStep + 1 && isStepValid(currentStep))) {
-      setCurrentStep(step)
-    }
   }
 
   // Selection handlers
@@ -384,6 +353,14 @@ export function AddSourceDialog({
 
   // Form submission
   const onSubmit = async (data: CreateSourceFormData) => {
+    if (data.type === 'link' && data.url) {
+      const { invalid } = parseAndValidateUrls(data.url)
+      if (invalid.length > 0) {
+        setUrlValidationErrors(invalid)
+        return
+      }
+    }
+
     try {
       setProcessing(true)
 
@@ -430,7 +407,6 @@ export function AddSourceDialog({
     }
 
     reset()
-    setCurrentStep(1)
     setProcessing(false)
     setProcessingStatus(null)
     setSelectedNotebooks(defaultNotebookId ? [defaultNotebookId] : [])
@@ -530,102 +506,89 @@ export function AddSourceDialog({
     )
   }
 
-  const currentStepValid = isStepValid(currentStep)
+  const canSubmit = isStepValid(1)
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[700px] p-0">
         <DialogHeader className="px-8 pt-8 pb-0 sm:text-center">
           <DialogTitle className="text-2xl font-normal leading-snug">{t('sources.addNew')}</DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="sr-only">
             {t('sources.processDescription')}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="min-w-0">
-          <WizardContainer
-            currentStep={currentStep}
-            steps={WIZARD_STEPS}
-            onStepClick={handleStepClick}
-            className="border-0"
-          >
-            {currentStep === 1 && (
-              <SourceTypeStep
-                // @ts-expect-error - Type inference issue with zod schema
-                control={control}
-                register={register}
-                setValue={setValue}
-                // @ts-expect-error - Type inference issue with zod schema
-                errors={errors}
-                urlValidationErrors={urlValidationErrors}
-                onClearUrlErrors={handleClearUrlErrors}
-              />
-            )}
-            
-            {currentStep === 2 && (
-              <NotebooksStep
-                notebooks={notebooks}
-                selectedNotebooks={selectedNotebooks}
-                onToggleNotebook={handleNotebookToggle}
-                loading={notebooksLoading}
-              />
-            )}
-            
-            {currentStep === 3 && (
-              <ProcessingStep
-                // @ts-expect-error - Type inference issue with zod schema
-                control={control}
-                transformations={transformations}
-                selectedTransformations={selectedTransformations}
-                onToggleTransformation={handleTransformationToggle}
-                loading={transformationsLoading}
-                settings={settings}
-              />
-            )}
-          </WizardContainer>
+          <div className="max-h-[60vh] min-w-0 space-y-4 overflow-y-auto px-8 py-4">
+            <SourceTypeStep
+              // @ts-expect-error - Type inference issue with zod schema
+              control={control}
+              register={register}
+              setValue={setValue}
+              // @ts-expect-error - Type inference issue with zod schema
+              errors={errors}
+              urlValidationErrors={urlValidationErrors}
+              onClearUrlErrors={handleClearUrlErrors}
+            />
 
-          {/* Navigation */}
-          <div className="flex justify-between items-center px-8 py-5">
-            <Button 
-              type="button" 
-              variant="ghost" 
-              onClick={handleClose}
-            >
+            <Collapsible>
+              <CollapsibleTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="group gap-1 px-2 text-muted-foreground"
+                >
+                  <ChevronDownIcon className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
+                  {t('navigation.settings')}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-6 pt-4">
+                {selectedType !== 'text' && !isBatchMode && (
+                  <div>
+                    <Label htmlFor="source-title" className="mb-2 block">
+                      {`${t('common.title')} (${t('common.optional')})`}
+                    </Label>
+                    <Input
+                      id="source-title"
+                      {...register('title')}
+                      placeholder={t('sources.titlePlaceholder')}
+                      autoComplete="off"
+                    />
+                  </div>
+                )}
+
+                <NotebooksStep
+                  notebooks={notebooks}
+                  selectedNotebooks={selectedNotebooks}
+                  onToggleNotebook={handleNotebookToggle}
+                  loading={notebooksLoading}
+                />
+
+                <ProcessingStep
+                  // @ts-expect-error - Type inference issue with zod schema
+                  control={control}
+                  transformations={transformations}
+                  selectedTransformations={selectedTransformations}
+                  onToggleTransformation={handleTransformationToggle}
+                  loading={transformationsLoading}
+                  settings={settings}
+                />
+              </CollapsibleContent>
+            </Collapsible>
+          </div>
+
+          <div className="flex items-center justify-between px-8 py-5">
+            <Button type="button" variant="ghost" onClick={handleClose}>
               {t('common.cancel')}
             </Button>
-
-            <div className="flex gap-2">
-              {currentStep > 1 && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={handlePrevStep}
-                >
-                  {t('common.back')}
-                </Button>
-              )}
-
-              {/* Show Next button on steps 1 and 2, styled as outline/secondary */}
-              {currentStep < 3 && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={(e) => handleNextStep(e)}
-                  disabled={!currentStepValid}
-                >
-                  {t('common.next')}
-                </Button>
-              )}
-
-              {/* Show Done button on all steps, styled as primary */}
-              <Button
-                type="submit"
-                disabled={!currentStepValid || createSource.isPending}
-                className="min-w-[120px]"
-              >
-                {createSource.isPending ? t('common.adding') : t('common.done')}
-              </Button>
-            </div>
+            <Button
+              type="submit"
+              disabled={!canSubmit || createSource.isPending}
+              className="min-w-[120px]"
+            >
+              {createSource.isPending ? t('common.adding') : t('sources.addSource')}
+            </Button>
           </div>
         </form>
       </DialogContent>
