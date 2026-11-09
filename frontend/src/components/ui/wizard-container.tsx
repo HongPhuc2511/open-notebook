@@ -23,7 +23,7 @@ function StepIndicator({ currentStep, steps, onStepClick }: {
   onStepClick?: (step: number) => void
 }) {
   return (
-    <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-muted">
+    <div className="flex items-center justify-between px-8 py-4">
       {steps.map((step, index) => {
         const isCompleted = currentStep > step.number
         const isCurrent = currentStep === step.number
@@ -55,7 +55,7 @@ function StepIndicator({ currentStep, steps, onStepClick }: {
                   {step.title}
                 </p>
                 <p className={cn(
-                  'text-xs',
+                  'hidden text-xs',
                   isCurrent ? 'text-muted-foreground' : 'text-muted-foreground/80'
                 )}>
                   {step.description}
@@ -85,7 +85,7 @@ export function WizardContainer({
   className
 }: WizardContainerProps) {
   return (
-    <div className={cn('flex flex-col h-[500px] min-w-0 overflow-hidden bg-card rounded-lg border border-border', className)}>
+    <div className={cn('flex flex-col h-[500px] min-w-0 overflow-hidden bg-transparent', className)}>
       <StepIndicator
         currentStep={currentStep}
         steps={steps}
@@ -93,7 +93,7 @@ export function WizardContainer({
       />
 
       <div className="flex-1 min-w-0 overflow-hidden">
-        <div className="h-full min-w-0 overflow-y-auto px-6 py-4">
+        <div className="h-full min-w-0 overflow-y-auto px-8 py-4">
           {children}
         </div>
       </div>

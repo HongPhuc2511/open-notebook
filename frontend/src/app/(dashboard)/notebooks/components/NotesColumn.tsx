@@ -94,7 +94,7 @@ export function NotesColumn({
               <CardTitle className="flex items-center gap-2 text-lg font-normal text-foreground">
                 {t('notebooks.studioTitle')}
               </CardTitle>
-              <div className="flex items-center gap-2">
+              <div className="flex shrink-0 items-center gap-1">
                 {onBulkContextModeChange && notes && notes.length > 0 && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -113,9 +113,9 @@ export function NotesColumn({
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
-                <Button size="sm" variant="tonal" className="rounded-full" onClick={() => handleOpenEditor()}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  {t('common.writeNote')}
+                <Button size="sm" variant="tonal" className="rounded-full" aria-label={t('common.writeNote')} onClick={() => handleOpenEditor()}>
+                  <Plus className="h-4 w-4 @[18rem]/card-header:mr-2" />
+                  <span className="hidden @[18rem]/card-header:inline">{t('common.writeNote')}</span>
                 </Button>
                 {collapseButton}
               </div>

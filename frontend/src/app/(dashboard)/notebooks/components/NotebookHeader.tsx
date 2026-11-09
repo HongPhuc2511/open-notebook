@@ -55,38 +55,60 @@ export function NotebookHeader({ notebook }: NotebookHeaderProps) {
     })
   }
 
-    return (
+  return (
     <>
-      <div className="pb-2">
-        {/* Top row: back button, title, overflow menu */}
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex min-w-0 flex-1 items-center gap-2">
-            <Button
-              asChild
-              variant="ghost"
-              size="icon"
-              className="h-10 w-10 shrink-0 rounded-full"
-              aria-label="Back to notebooks"
-            >
-              <Link href="/notebooks">
-                <ArrowLeft className="h-5 w-5" />
-              </Link>
-            </Button>
-            <InlineEdit
-              id="notebook-name"
-              name="notebook-name"
-              value={notebook.name}
-              onSave={handleUpdateName}
-              className="text-2xl font-normal tracking-tight"
-              inputClassName="text-2xl font-normal tracking-tight"
-              placeholder={t('notebooks.namePlaceholder')}
-            />
-            {notebook.archived && (
-              <Badge variant="secondary" className="rounded-full">
-                {t('notebooks.archived')}
-              </Badge>
-            )}
-          </div>
+      {/* One compact row: back, title, description, timestamps, overflow menu.
+          Items use flex-1 with a max width (no w-full), so nothing collapses. */}
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <Button
+          asChild
+          variant="ghost"
+          size="icon"
+          className="size-9 shrink-0"
+          aria-label="Back to notebooks"
+        >
+          <Link href="/notebooks">
+            <ArrowLeft className="h-5 w-5" />
+          </Link>
+        </Button>
+
+        <div className="min-w-[8rem] max-w-[22rem] flex-1">
+          <InlineEdit
+            id="notebook-name"
+            name="notebook-name"
+            value={notebook.name}
+            onSave={handleUpdateName}
+            className="text-xl font-normal tracking-tight"
+            inputClassName="text-xl font-normal tracking-tight"
+            placeholder={t('notebooks.namePlaceholder')}
+          />
+        </div>
+
+        {notebook.archived && (
+          <Badge variant="secondary" className="rounded-full">
+            {t('notebooks.archived')}
+          </Badge>
+        )}
+
+        <div className="min-w-[8rem] max-w-md flex-1">
+          <InlineEdit
+            id="notebook-description"
+            name="notebook-description"
+            value={notebook.description || ''}
+            onSave={handleUpdateDescription}
+            className="text-sm text-muted-foreground"
+            inputClassName="text-sm text-muted-foreground"
+            placeholder={t('notebooks.addDescription')}
+            multiline
+            emptyText={t('notebooks.addDescription')}
+          />
+        </div>
+
+        <div className="ml-auto flex items-center gap-2">
+          <span className="hidden whitespace-nowrap text-xs text-muted-foreground xl:block">
+            {t('common.created', { time: formatDistanceToNow(new Date(notebook.created), { addSuffix: true, locale: dfLocale }) })} •{' '}
+            {t('common.updated', { time: formatDistanceToNow(new Date(notebook.updated), { addSuffix: true, locale: dfLocale }) })}
+          </span>
 
           {/* Archive / delete live in an overflow menu, like NotebookLM */}
           <DropdownMenu>
@@ -94,7 +116,7 @@ export function NotebookHeader({ notebook }: NotebookHeaderProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-10 w-10 shrink-0 rounded-full"
+                className="size-9 shrink-0"
                 aria-label="More actions"
               >
                 <MoreVertical className="h-5 w-5" />
@@ -123,25 +145,6 @@ export function NotebookHeader({ notebook }: NotebookHeaderProps) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
-
-        {/* Description and timestamps, indented to align with the title */}
-        <div className="pl-12">
-          <InlineEdit
-            id="notebook-description"
-            name="notebook-description"
-            value={notebook.description || ''}
-            onSave={handleUpdateDescription}
-            className="text-sm text-muted-foreground"
-            inputClassName="text-sm text-muted-foreground"
-            placeholder={t('notebooks.addDescription')}
-            multiline
-            emptyText={t('notebooks.addDescription')}
-          />
-          <div className="text-xs text-muted-foreground">
-            {t('common.created', { time: formatDistanceToNow(new Date(notebook.created), { addSuffix: true, locale: dfLocale }) })} •{' '}
-            {t('common.updated', { time: formatDistanceToNow(new Date(notebook.updated), { addSuffix: true, locale: dfLocale }) })}
-          </div>
         </div>
       </div>
 

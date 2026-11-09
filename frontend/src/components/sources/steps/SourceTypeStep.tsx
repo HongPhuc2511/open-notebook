@@ -168,11 +168,11 @@ export function SourceTypeStep({ control, register, setValue, errors, urlValidat
               onValueChange={(value) => field.onChange(value as 'link' | 'upload' | 'text')}
               className="w-full"
             >
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="flex w-full flex-wrap justify-center gap-2">
                 {getSourceTypes(t).map((type) => {
                   const Icon = type.icon
                   return (
-                    <TabsTrigger key={type.value} value={type.value} className="gap-2">
+                    <TabsTrigger key={type.value} value={type.value} className="flex-none gap-2 border border-border bg-popover px-5 data-[state=active]:border-transparent">
                       <Icon className="h-4 w-4" />
                       {type.label}
                     </TabsTrigger>
@@ -212,7 +212,7 @@ export function SourceTypeStep({ control, register, setValue, errors, urlValidat
                         <p className="text-sm text-destructive mt-1">{errors.url.message}</p>
                       )}
                       {urlValidationErrors && urlValidationErrors.length > 0 && (
-                        <div className="mt-2 p-3 bg-destructive/10 rounded-md border border-destructive/20">
+                        <div className="mt-2 p-3 bg-destructive/10 rounded-2xl">
                           <p className="text-sm font-medium text-destructive mb-2">
                             {t('sources.invalidUrlsDetected')}
                           </p>
@@ -247,7 +247,7 @@ export function SourceTypeStep({ control, register, setValue, errors, urlValidat
                       </div>
                       <Input
                         id="file"
-                        type="file"
+                        type="file" className="h-auto cursor-pointer rounded-3xl border-dashed bg-transparent px-6 py-10 file:mr-4 file:h-8 file:rounded-full file:bg-accent file:px-4 file:text-accent-foreground"
                         multiple
                         {...register('file')}
                         accept=".pdf,.doc,.docx,.pptx,.ppt,.xlsx,.xls,.odt,.ods,.odp,.txt,.md,.epub,.mp4,.avi,.mov,.wmv,.mp3,.wav,.m4a,.aac,.jpg,.jpeg,.png,.tiff,.zip,.tar,.gz,.html,.htm"
@@ -256,7 +256,7 @@ export function SourceTypeStep({ control, register, setValue, errors, urlValidat
                         {t('sources.selectMultipleFilesHint')}
                       </p>
                       {fileCount > 1 && fileInput instanceof FileList && (
-                        <div className="mt-2 p-3 rounded-md border border-border">
+                        <div className="mt-2 p-3 rounded-2xl bg-muted">
                           <p className="text-xs font-medium mb-2">{t('sources.selectedFiles')}</p>
                           <ul className="space-y-1 max-h-32 overflow-y-auto">
                             {Array.from(fileInput).map((file, idx) => (
@@ -337,7 +337,7 @@ export function SourceTypeStep({ control, register, setValue, errors, urlValidat
 
       {/* Batch mode indicator */}
       {isBatchMode && (
-        <div className="p-4 rounded-md border border-border">
+        <div className="p-4 rounded-2xl bg-muted">
           <div className="flex items-center gap-2 mb-2">
             <Badge variant="default">{t('common.batchMode')}</Badge>
             <span className="text-sm font-medium">
