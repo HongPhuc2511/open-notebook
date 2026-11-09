@@ -2,9 +2,8 @@
 
 import { useMemo, useState } from "react"
 import { Control, FieldErrors, UseFormRegister, UseFormSetValue, useWatch } from "react-hook-form"
-import { FileIcon, LinkIcon, FileTextIcon } from "lucide-react"
+import { FileIcon, LinkIcon, FileTextIcon, UploadIcon } from "lucide-react"
 import { useTranslation } from "@/lib/hooks/use-translation"
-import { FormSection } from "@/components/ui/form-section"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -155,10 +154,7 @@ export function SourceTypeStep({ control, register, setValue, errors, urlValidat
   const isOverLimit = itemCount > MAX_BATCH_SIZE
   return (
     <div className="space-y-6">
-      <FormSection
-        title={t('sources.title')}
-        description={t('sources.processDescription')}
-      >
+      <div>
         <Controller
           control={control}
           name="type"
@@ -182,7 +178,6 @@ export function SourceTypeStep({ control, register, setValue, errors, urlValidat
               
               {getSourceTypes(t).map((type) => (
                 <TabsContent key={type.value} value={type.value} className="mt-4">
-                  <p className="text-sm text-muted-foreground mb-4">{type.description}</p>
                   
                   {/* Type-specific fields */}
                   {type.value === 'link' && (
@@ -245,16 +240,29 @@ export function SourceTypeStep({ control, register, setValue, errors, urlValidat
                           </Badge>
                         )}
                       </div>
-                      <Input
-                        id="file"
-                        type="file" className="h-auto cursor-pointer rounded-3xl border-dashed bg-transparent px-6 py-10 file:mr-4 file:h-8 file:rounded-full file:bg-accent file:px-4 file:text-accent-foreground"
-                        multiple
-                        {...register('file')}
-                        accept=".pdf,.doc,.docx,.pptx,.ppt,.xlsx,.xls,.odt,.ods,.odp,.txt,.md,.epub,.mp4,.avi,.mov,.wmv,.mp3,.wav,.m4a,.aac,.jpg,.jpeg,.png,.tiff,.zip,.tar,.gz,.html,.htm"
-                      />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {t('sources.selectMultipleFilesHint')}
-                      </p>
+                                            <div className="relative flex min-h-[200px] flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-border bg-secondary/50 px-6 py-8 text-center transition-colors focus-within:ring-2 focus-within:ring-ring hover:bg-secondary">
+                        <UploadIcon className="h-6 w-6 text-muted-foreground" aria-hidden="true" />
+                        {fileCount > 0 && fileInput instanceof FileList ? (
+                          <p className="max-w-full truncate text-sm font-medium">
+                            {fileCount === 1
+                              ? fileInput[0].name
+                              : t('sources.filesCount', { count: fileCount })}
+                          </p>
+                        ) : (
+                          <p className="max-w-md text-xs text-muted-foreground">
+                            {t('sources.selectMultipleFilesHint')}
+                          </p>
+                        )}
+                        <input
+                          id="file"
+                          type="file"
+                          multiple
+                          {...register('file')}
+                          aria-label={t('sources.fileLabel')}
+                          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                          accept=".pdf,.doc,.docx,.pptx,.ppt,.xlsx,.xls,.odt,.ods,.odp,.txt,.md,.epub,.mp4,.avi,.mov,.wmv,.mp3,.wav,.m4a,.aac,.jpg,.jpeg,.png,.tiff,.zip,.tar,.gz,.html,.htm"
+                        />
+                      </div>
                       {fileCount > 1 && fileInput instanceof FileList && (
                         <div className="mt-2 p-3 rounded-2xl bg-muted">
                           <p className="text-xs font-medium mb-2">{t('sources.selectedFiles')}</p>
@@ -311,18 +319,13 @@ export function SourceTypeStep({ control, register, setValue, errors, urlValidat
         {errors.type && (
           <p className="text-sm text-destructive mt-1">{errors.type.message}</p>
         )}
-      </FormSection>
+      </div>
 
-      {/* Hide title field in batch mode - titles will be auto-generated */}
-      {!isBatchMode && (
-        <FormSection
-          htmlFor="source-title"
-          title={selectedType === 'text' ? `${t('common.title')} *` : `${t('common.title')} (${t('common.optional')})`}
-          description={selectedType === 'text'
-            ? t('sources.titleRequired')
-            : t('sources.titleGenerated')
-          }
-        >
+        {selectedType === 'text' && (
+        <div>
+          <Label htmlFor="source-title" className="mb-2 block">
+            {`${t('common.title')} *`}
+          </Label>
           <Input
             id="source-title"
             {...register('title')}
@@ -332,7 +335,7 @@ export function SourceTypeStep({ control, register, setValue, errors, urlValidat
           {errors.title && (
             <p className="text-sm text-destructive mt-1">{errors.title.message}</p>
           )}
-        </FormSection>
+        </div>
       )}
 
       {/* Batch mode indicator */}
