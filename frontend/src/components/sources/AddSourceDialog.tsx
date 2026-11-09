@@ -535,8 +535,8 @@ export function AddSourceDialog({
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[700px] p-0">
-        <DialogHeader className="px-6 pt-6 pb-0">
-          <DialogTitle>{t('sources.addNew')}</DialogTitle>
+        <DialogHeader className="px-8 pt-8 pb-0 sm:text-center">
+          <DialogTitle className="text-2xl font-normal leading-snug">{t('sources.addNew')}</DialogTitle>
           <DialogDescription>
             {t('sources.processDescription')}
           </DialogDescription>
@@ -585,10 +585,10 @@ export function AddSourceDialog({
           </WizardContainer>
 
           {/* Navigation */}
-          <div className="flex justify-between items-center px-6 py-4 border-t border-border">
+          <div className="flex justify-between items-center px-8 py-5">
             <Button 
               type="button" 
-              variant="outline" 
+              variant="ghost" 
               onClick={handleClose}
             >
               {t('common.cancel')}
@@ -598,7 +598,7 @@ export function AddSourceDialog({
               {currentStep > 1 && (
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="ghost"
                   onClick={handlePrevStep}
                 >
                   {t('common.back')}
@@ -609,7 +609,7 @@ export function AddSourceDialog({
               {currentStep < 3 && (
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="ghost"
                   onClick={(e) => handleNextStep(e)}
                   disabled={!currentStepValid}
                 >

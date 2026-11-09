@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { sourcesApi, type SourceSortField } from '@/lib/api/sources'
 import { SourceListResponse } from '@/lib/types/api'
@@ -8,15 +8,18 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
 import { AppShell } from '@/components/layout/AppShell'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
-import { FileText, Trash2, ArrowDown, ArrowUp, ArrowUpDown, Plus } from 'lucide-react'
+import { FileText, Trash2, ArrowDown, ArrowUp, ArrowUpDown, Plus, LayoutGrid, List } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { getDateLocale } from '@/lib/utils/date-locale'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { getApiErrorKey } from '@/lib/utils/error-handler'
 import { AddSourceDialog } from '@/components/sources/AddSourceDialog'
+import { SourceCard } from '@/components/sources/SourceCard'
+import { useSourceViewStore } from '@/lib/stores/source-view-store'
 
 export default function SourcesPage() {
   const { t, language } = useTranslation()
@@ -27,6 +30,9 @@ export default function SourcesPage() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedIndex, setSelectedIndex] = useState(0)
+  const [searchTerm, setSearchTerm] = useState('')
+  const viewMode = useSourceViewStore((state) => state.viewMode)
+  const setViewMode = useSourceViewStore((state) => state.setViewMode)
   const [sortBy, setSortBy] = useState<SourceSortField>('updated')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; source: SourceListResponse | null }>({
@@ -40,6 +46,17 @@ export default function SourcesPage() {
   const loadingMoreRef = useRef(false)
   const hasMoreRef = useRef(true)
   const PAGE_SIZE = 30
+
+const normalizedQuery = searchTerm.trim().toLowerCase()
+
+const visibleSources = useMemo(() => {
+  if (!normalizedQuery) return sources
+  return sources.filter((source) => {
+    const title = (source.title || '').toLowerCase()
+    const url = (source.asset?.url || '').toLowerCase()
+    return title.includes(normalizedQuery) || url.includes(normalizedQuery)
+  })
+}, [sources, normalizedQuery])
 
   const fetchSources = useCallback(async (reset = false) => {
     try {
@@ -92,22 +109,30 @@ export default function SourcesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sortBy, sortOrder])
 
+    useEffect(() => {
+    if (normalizedQuery && !loading && !loadingMoreRef.current && hasMoreRef.current) {
+      fetchSources(false)
+    }
+  }, [normalizedQuery, loading, sources.length, fetchSources])
+
   useEffect(() => {
     // Focus the table when component mounts or sources change
-    if (sources.length > 0 && tableRef.current) {
+    if (sources.length > 0 && tableRef.current && document.activeElement?.tagName !== 'INPUT') {
       tableRef.current.focus()
     }
   }, [sources])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (sources.length === 0) return
+    const target = e.target as HTMLElement | null
+    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return
+    if (viewMode !== 'list' || visibleSources.length === 0) return
 
       switch (e.key) {
         case 'ArrowDown':
           e.preventDefault()
           setSelectedIndex((prev) => {
-            const newIndex = Math.min(prev + 1, sources.length - 1)
+            const newIndex = Math.min(prev + 1, visibleSources.length - 1)
             // Scroll to keep selected row visible
             setTimeout(() => scrollToSelectedRow(newIndex), 0)
             return newIndex
@@ -124,8 +149,8 @@ export default function SourcesPage() {
           break
         case 'Enter':
           e.preventDefault()
-          if (sources[selectedIndex]) {
-            router.push(`/sources/${sources[selectedIndex].id}`)
+            if (visibleSources[selectedIndex]) {
+            router.push(`/sources/${visibleSources[selectedIndex].id}`)
           }
           break
         case 'Home':
@@ -135,7 +160,7 @@ export default function SourcesPage() {
           break
         case 'End':
           e.preventDefault()
-          const lastIndex = sources.length - 1
+          const lastIndex = visibleSources.length - 1
           setSelectedIndex(lastIndex)
           setTimeout(() => scrollToSelectedRow(lastIndex), 0)
           break
@@ -144,7 +169,7 @@ export default function SourcesPage() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [sources, selectedIndex, router])
+  }, [visibleSources, selectedIndex, router, viewMode])
 
   const scrollToSelectedRow = (index: number) => {
     const scrollContainer = scrollContainerRef.current
@@ -316,7 +341,7 @@ export default function SourcesPage() {
     }
 
     return (<>
-      <div className="flex flex-col h-full w-full max-w-none bg-muted/40 px-6 py-6">
+      <div className="flex flex-col h-full w-full max-w-none px-8 py-6">
         <div className="mb-6 flex-shrink-0">
           <h1 className="text-2xl font-normal tracking-tight">{t('sources.allSources')}</h1>
           <p className="mt-2 text-muted-foreground">
@@ -324,7 +349,11 @@ export default function SourcesPage() {
           </p>
         </div>
 
-        <div ref={scrollContainerRef} className="flex-1 overflow-auto rounded-2xl bg-popover">
+        <div
+          ref={scrollContainerRef}
+          className={cn('flex-1 overflow-auto', viewMode === 'list' && 'rounded-2xl bg-popover')}
+        >
+          {viewMode === 'list' ? (
           <table
             ref={tableRef}
             tabIndex={0}
@@ -365,7 +394,14 @@ export default function SourcesPage() {
               </tr>
             </thead>
             <tbody>
-              {sources.map((source, index) => (
+              {visibleSources.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="h-24 text-center text-muted-foreground">
+                    {t('common.noMatches')}
+                  </td>
+                </tr>
+              )}
+              {visibleSources.map((source, index) => (
                 <tr
                   key={source.id}
                   onClick={() => handleRowClick(index, source.id)}
@@ -451,6 +487,30 @@ export default function SourcesPage() {
               )}
             </tbody>
           </table>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 pb-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {visibleSources.length === 0 && (
+                <p className="col-span-full py-12 text-center text-muted-foreground">
+                  {t('common.noMatches')}
+                </p>
+              )}
+              {visibleSources.map((source) => (
+                <SourceCard
+                  key={source.id}
+                  source={source}
+                  className="rounded-2xl bg-secondary hover:bg-accent"
+                  onClick={(sourceId) => router.push(`/sources/${sourceId}`)}
+                  onDelete={() => setDeleteDialog({ open: true, source })}
+                />
+              ))}
+              {loadingMore && (
+                <div className="col-span-full flex items-center justify-center py-6">
+                  <LoadingSpinner />
+                  <span className="ml-2 text-muted-foreground">{t('sources.loadingMore')}</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -466,8 +526,48 @@ export default function SourcesPage() {
     </>)
   }
 
+  const topBarActions = (
+    <>
+    <Input
+      id="source-search"
+      name="source-search"
+      value={searchTerm}
+      onChange={(event) => {
+        setSearchTerm(event.target.value)
+        setSelectedIndex(0)
+      }}
+      placeholder={t('sources.searchPlaceholder')}
+      autoComplete="off"
+      aria-label={t('sources.searchPlaceholder')}
+      className="w-32 rounded-full sm:w-48 lg:w-64"
+    />
+    <div className="hidden shrink-0 items-center rounded-full bg-muted p-1 sm:flex">
+      <Button
+        variant={viewMode === 'tile' ? 'tonal' : 'ghost'}
+        size="sm"
+        onClick={() => setViewMode('tile')}
+        aria-label={t('notebooks.tileView')}
+        aria-pressed={viewMode === 'tile'}
+        title={t('notebooks.tileView')}
+      >
+        <LayoutGrid className="h-4 w-4" />
+      </Button>
+      <Button
+        variant={viewMode === 'list' ? 'tonal' : 'ghost'}
+        size="sm"
+        onClick={() => setViewMode('list')}
+        aria-label={t('notebooks.listView')}
+        aria-pressed={viewMode === 'list'}
+        title={t('notebooks.listView')}
+      >
+        <List className="h-4 w-4" />
+      </Button>
+    </div>
+    </>
+  )
+
   return (
-    <AppShell>
+    <AppShell topBarActions={topBarActions}>
       {renderContent()}
       <AddSourceDialog
         open={sourceDialogOpen}

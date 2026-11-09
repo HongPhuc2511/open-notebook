@@ -214,7 +214,7 @@ export function ChatPanel({
         {/* Notebook Context Indicator, now below the input like NotebookLM's footer note */}
         {notebookContextStats && (
           <ContextIndicator
-            className="mx-4 mb-3 rounded-xl"
+            className="order-1 mx-4 mb-1 mt-1 rounded-xl"
             sourcesInsights={notebookContextStats.sourcesInsights}
             sourcesFull={notebookContextStats.sourcesFull}
             notesCount={notebookContextStats.notesCount}
@@ -222,7 +222,7 @@ export function ChatPanel({
             charCount={notebookContextStats.charCount}
           />
         )}
-        <p className="px-4 pb-3 text-center text-xs text-muted-foreground">
+        <p className="order-3 px-4 pb-2 pt-1 text-center text-[11px] text-muted-foreground">
             {t('chat.aiDisclaimer')}
         </p>
       </CardContent>
@@ -274,7 +274,7 @@ function ChatComposer({
   const keyHint = isMac ? '⌘+Enter' : 'Ctrl+Enter'
 
   return (
-    <div className="flex-shrink-0 px-4 pb-2 pt-2">
+    <div className="order-2 flex-shrink-0 px-4 pb-0 pt-2">
       {/* One pill holds the input, the model picker and the send button */}
       <div className="flex min-w-0 items-end gap-2 rounded-3xl border bg-background py-1.5 pl-5 pr-1.5 shadow-sm focus-within:border-primary/50">
         <Textarea
