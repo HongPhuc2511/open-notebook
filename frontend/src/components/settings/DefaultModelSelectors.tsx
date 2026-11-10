@@ -69,14 +69,14 @@ function DefaultModelSelect({
         {config.label}
         {config.required && <span className="text-destructive ml-0.5">*</span>}
       </Label>
-      <div className="flex gap-1">
+      <div className="flex min-w-0 gap-1">
         <Select
           value={currentValue || (config.required ? "" : NONE_VALUE)}
           onValueChange={(v) => onChange(config.key, v === NONE_VALUE ? "" : v)}
         >
           <SelectTrigger
             id={config.id}
-            className={`h-8 text-xs ${config.required && !isValid && available.length > 0 ? 'border-destructive' : ''}`}
+            className={`h-8 w-full min-w-0 flex-1 text-xs ${config.required && !isValid && available.length > 0 ? 'border-destructive' : ''}`}
           >
             <SelectValue placeholder={
               config.required && !isValid && available.length > 0
@@ -203,7 +203,7 @@ export function DefaultModelSelectors({
         {missingRequired.length > 0 && (
           <Alert>
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="flex items-center justify-between gap-4">
+            <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <span>{t('models.missingRequiredModels', { models: missingRequired.join(', ') })}</span>
               <Button
                 variant="outline" size="sm"

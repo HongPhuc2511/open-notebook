@@ -833,7 +833,7 @@ class TestRegionalBaseUrl:
                 requested.append(url)
                 return httpx.Response(
                     200,
-                    json={"data": [{"id": "glm-5.2"}]},
+                    json={"data": [{"id": "glm-5.3-flash"}]},
                     request=httpx.Request("GET", url),
                 )
 

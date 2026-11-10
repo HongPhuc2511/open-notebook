@@ -1,14 +1,14 @@
-"""Single choke point for podcast episode audio file paths (#1030).
+﻿"""Single choke point for podcast episode audio file paths (#1030).
 
 ``PodcastEpisode.audio_file`` stores a path RELATIVE to ``PODCASTS_FOLDER``
 (e.g. ``episodes/<uuid>/audio/<uuid>.mp3``). Two helpers enforce that
 contract at the only two places paths cross the DB boundary:
 
-- ``to_relative_audio_path()`` — write side (podcast generation command):
+- ``to_relative_audio_path()`` â€” write side (podcast generation command):
   converts the generated file path to the relative storage form and refuses
   to produce a value outside the podcasts root, so the DB never holds an
   absolute or escaping path.
-- ``resolve_contained_audio_path()`` — read side (every API consumption
+- ``resolve_contained_audio_path()`` â€” read side (every API consumption
   point: stream, list/get, delete, retry): joins the stored value with
   ``PODCASTS_FOLDER``, resolves symlinks/``..`` and verifies containment.
   Any absolute, ``file://`` or escaping value is treated as legacy-invalid
@@ -44,13 +44,20 @@ def to_relative_audio_path(audio_path: Union[str, Path]) -> str:
     ``PODCASTS_FOLDER`` as a POSIX-style string.
 
     Raises:
-        ValueError: if the path resolves outside the podcasts root — the DB
+        ValueError: if the path resolves outside the podcasts root â€” the DB
             must never hold an absolute or escaping value. ValueError also
             marks the generation job as permanently failed (no retry).
     """
     raw = str(audio_path)
-    if raw.startswith("file://"):
-        raw = unquote(urlparse(raw).path)
+    if raw.lower().startswith("file://"):
+        # Windows may produce file://C:\... while POSIX uses file:///...
+        if len(raw) > 7 and raw[7].isalpha() and raw[8:9] == ":":
+            raw = raw[7:]
+        else:
+            parsed = urlparse(raw)
+            raw = unquote(parsed.path)
+            if parsed.netloc:
+                raw = f"//{parsed.netloc}{raw}"
     resolved = Path(os.path.realpath(raw))
     root = podcasts_root()
     if resolved == root or not resolved.is_relative_to(root):
@@ -70,7 +77,7 @@ def resolve_contained_audio_path(audio_file: Optional[str]) -> Optional[Path]:
     Returns ``None`` for anything that must not be followed:
     - empty/None values
     - absolute paths and ``file://`` URIs (legacy rows migration 21 could
-      not convert — exactly the out-of-root cases #1018's guards reject)
+      not convert â€” exactly the out-of-root cases #1018's guards reject)
     - relative paths that escape the root (``..`` or symlink traversal)
     """
     if not audio_file:
