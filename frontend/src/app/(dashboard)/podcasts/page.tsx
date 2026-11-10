@@ -27,16 +27,17 @@ export default function PodcastsPage() {
   return (
     <AppShell>
       <div className="flex-1 overflow-y-auto">
-        <div className="px-6 py-6 space-y-6">
-          <header className="space-y-1">
-            <h1 className="font-display text-2xl font-bold tracking-tight">{t('podcasts.listTitle')}</h1>
-            <p className="text-muted-foreground">
+        <div className="mx-auto w-full max-w-7xl px-4 py-6 md:px-8 md:py-8">
+        <div className="space-y-7">
+          <header className="space-y-2">
+            <h1 className="font-display text-2xl font-semibold tracking-tight md:text-3xl">{t('podcasts.listTitle')}</h1>
+            <p className="max-w-3xl text-sm leading-relaxed text-muted-foreground md:text-base">
               {t('podcasts.listDesc')}
             </p>
           </header>
 
           {hasUnconfiguredProfiles ? (
-            <Alert className="bg-warn-tint text-warn border-warn/30">
+            <Alert className="rounded-2xl border-warn/30 bg-warn-tint px-4 py-3 text-warn shadow-sm md:px-5">
               <AlertTriangle className="h-4 w-4" />
               <AlertTitle>{t('podcasts.setupRequired')}</AlertTitle>
               <AlertDescription>
@@ -50,28 +51,29 @@ export default function PodcastsPage() {
             onValueChange={(value) => setActiveTab(value as 'episodes' | 'templates')}
             className="space-y-6"
           >
-            <div className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('podcasts.chooseAView')}</p>
-              <TabsList aria-label={t('common.accessibility.podcastViews')} className="w-full max-w-md">
-                <TabsTrigger value="episodes">
+            <div className="space-y-3">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{t('podcasts.chooseAView')}</p>
+              <TabsList aria-label={t('common.accessibility.podcastViews')} className="inline-flex h-auto w-fit max-w-full flex-wrap gap-1 rounded-full bg-muted/70 p-1">
+                <TabsTrigger value="episodes" className="gap-2 rounded-full px-5 py-2.5 text-sm data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
                   <Mic className="h-4 w-4" />
                   {t('podcasts.episodesTab')}
                 </TabsTrigger>
-                <TabsTrigger value="templates">
+                <TabsTrigger value="templates" className="gap-2 rounded-full px-5 py-2.5 text-sm data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
                   <LayoutTemplate className="h-4 w-4" />
                   {t('podcasts.templatesTab')}
                 </TabsTrigger>
               </TabsList>
             </div>
 
-            <TabsContent value="episodes">
+            <TabsContent value="episodes" className="mt-5 space-y-6 focus-visible:outline-none">
               <EpisodesTab />
             </TabsContent>
 
-            <TabsContent value="templates">
+            <TabsContent value="templates" className="mt-5 space-y-6 focus-visible:outline-none">
               <TemplatesTab />
             </TabsContent>
           </Tabs>
+        </div>
         </div>
       </div>
     </AppShell>

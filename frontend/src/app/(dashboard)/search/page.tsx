@@ -163,36 +163,36 @@ export default function SearchPage() {
 
   return (
     <AppShell>
-      <div className="flex-1 overflow-y-auto p-4 md:p-6">
-        <h1 className="font-display text-xl md:text-2xl font-bold tracking-tight mb-4 md:mb-6">{t('searchPage.askAndSearch')}</h1>
+      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col overflow-y-auto px-4 py-6 md:px-8 md:py-8">
+        <h1 className="mb-3 font-display text-2xl font-semibold tracking-tight md:mb-5 md:text-3xl">{t('searchPage.askAndSearch')}</h1>
 
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'ask' | 'search')} className="w-full space-y-6">
-          <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('searchPage.chooseAMode')}</p>
-            <TabsList aria-label={t('common.accessibility.searchKB')} className="w-full max-w-xl">
-              <TabsTrigger value="ask">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'ask' | 'search')} className="w-full space-y-7">
+          <div className="space-y-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{t('searchPage.chooseAMode')}</p>
+            <TabsList aria-label={t('common.accessibility.searchKB')} className="inline-flex h-auto w-fit max-w-full flex-wrap gap-1 rounded-full bg-muted/70 p-1">
+              <TabsTrigger value="ask" className="gap-2 rounded-full px-5 py-2.5 text-sm data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
                 <MessageCircleQuestion className="h-4 w-4" />
                 {t('searchPage.askBeta')}
               </TabsTrigger>
-              <TabsTrigger value="search">
+              <TabsTrigger value="search" className="gap-2 rounded-full px-5 py-2.5 text-sm data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
                 <Search className="h-4 w-4" />
                 {t('searchPage.search')}
               </TabsTrigger>
             </TabsList>
           </div>
 
-          <TabsContent value="ask" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">{t('searchPage.askYourKb')}</CardTitle>
-                <p className="text-sm text-muted-foreground">
+          <TabsContent value="ask" className="mt-5 focus-visible:outline-none">
+            <Card className="rounded-3xl border-border/70 shadow-sm">
+              <CardHeader className="space-y-2 px-5 pt-6 md:px-7 md:pt-7">
+                <CardTitle className="text-xl font-semibold tracking-tight">{t('searchPage.askYourKb')}</CardTitle>
+                <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
                   {t('searchPage.askYourKbDesc')}
                 </p>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-5 px-5 pb-6 md:px-7 md:pb-7">
                 {/* Question Input */}
                 <div className="space-y-2">
-                  <Label htmlFor="ask-question">{t('searchPage.question')}</Label>
+                  <Label htmlFor="ask-question" className="text-sm font-medium">{t('searchPage.question')}</Label>
                   <Textarea
                     id="ask-question"
                     name="ask-question"
@@ -209,16 +209,19 @@ export default function SearchPage() {
                     disabled={ask.isStreaming}
                     rows={3}
                     aria-label={t('common.accessibility.enterQuestion')}
+                    className="min-h-32 resize-y rounded-2xl border-border/70 bg-background px-4 py-3 text-sm leading-6 shadow-none transition-colors focus-visible:ring-2 focus-visible:ring-primary/20"
                   />
                   <p className="text-xs text-muted-foreground">{t('searchPage.pressToSubmit')}</p>
                 </div>
 
                 {/* Notebook scope */}
-                <NotebookScopeSelector
-                  selectedIds={scopeNotebookIds}
-                  onChange={setScopeNotebookIds}
-                  disabled={ask.isStreaming}
-                />
+                <div className="rounded-2xl border border-border/60 bg-muted/20 px-4 py-3">
+                  <NotebookScopeSelector
+                    selectedIds={scopeNotebookIds}
+                    onChange={setScopeNotebookIds}
+                    disabled={ask.isStreaming}
+                  />
+                </div>
 
                 {/* Models Display */}
                 {!hasEmbeddingModel ? (
@@ -261,7 +264,7 @@ export default function SearchPage() {
                       <Button
                         onClick={handleAsk}
                         disabled={ask.isStreaming || !askQuestion.trim()}
-                        className="w-full"
+                        className="h-11 w-full rounded-full px-6 sm:w-auto"
                       >
                         {ask.isStreaming ? (
                           <>
@@ -277,7 +280,7 @@ export default function SearchPage() {
                         <Button
                           variant="outline"
                           onClick={() => setShowSaveDialog(true)}
-                          className="w-full"
+                          className="h-11 w-full rounded-full px-6 sm:w-auto"
                         >
                           <Save className="h-4 w-4 mr-2" />
                           {t('searchPage.saveToNotebooks')}
@@ -320,15 +323,15 @@ export default function SearchPage() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="search" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">{t('searchPage.search')}</CardTitle>
-                <p className="text-sm text-muted-foreground">
+          <TabsContent value="search" className="mt-5 focus-visible:outline-none">
+            <Card className="rounded-3xl border-border/70 shadow-sm">
+              <CardHeader className="space-y-2 px-5 pt-6 md:px-7 md:pt-7">
+                <CardTitle className="text-xl font-semibold tracking-tight">{t('searchPage.search')}</CardTitle>
+                <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
                   {t('searchPage.searchDesc')}
                 </p>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-5 px-5 pb-6 md:px-7 md:pb-7">
                 {/* Search Input */}
                 <div className="space-y-2">
                   <Label htmlFor="search-query" className="sr-only">
@@ -343,7 +346,7 @@ export default function SearchPage() {
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onKeyPress={handleKeyPress}
                       disabled={searchMutation.isPending}
-                      className="flex-1"
+                      className="h-12 flex-1 rounded-full border-border/70 bg-background px-5 shadow-none transition-colors focus-visible:ring-2 focus-visible:ring-primary/20"
                       aria-label={t('common.accessibility.enterSearch')}
                       autoComplete="off"
                     />
@@ -351,7 +354,7 @@ export default function SearchPage() {
                       onClick={handleSearch}
                       disabled={searchMutation.isPending || !searchQuery.trim()}
                       aria-label={t('common.accessibility.searchKBBtn')}
-                      className="w-full sm:w-auto"
+                      className="h-12 w-full rounded-full px-6 sm:w-auto"
                     >
                       {searchMutation.isPending ? (
                         <LoadingSpinner size="sm" />
@@ -370,17 +373,19 @@ export default function SearchPage() {
                 </div>
 
                 {/* Search Options */}
-                <div className="space-y-4">
+                <div className="grid gap-4 rounded-2xl border border-border/60 bg-muted/20 p-4 md:grid-cols-2 md:gap-5 md:p-5">
                   {/* Notebook scope */}
-                  <NotebookScopeSelector
-                    selectedIds={scopeNotebookIds}
-                    onChange={setScopeNotebookIds}
-                    disabled={searchMutation.isPending}
-                  />
+                  <div className="rounded-xl border border-border/50 bg-background/70 px-4 py-3 md:col-span-2">
+                    <NotebookScopeSelector
+                      selectedIds={scopeNotebookIds}
+                      onChange={setScopeNotebookIds}
+                      disabled={searchMutation.isPending}
+                    />
+                  </div>
 
                   {/* Search Type */}
-                  <div className="space-y-2" role="group" aria-labelledby="search-type-label">
-                    <span id="search-type-label" className="text-sm font-medium leading-none">{t('searchPage.searchType')}</span>
+                  <div className="space-y-3 rounded-xl bg-background/70 p-4" role="group" aria-labelledby="search-type-label">
+                    <span id="search-type-label" className="text-sm font-semibold leading-none">{t('searchPage.searchType')}</span>
                     {!hasEmbeddingModel && (
                       <div className="flex items-center gap-2 text-sm text-warn">
                         <AlertCircle className="h-4 w-4" />
@@ -416,8 +421,8 @@ export default function SearchPage() {
                   </div>
 
                   {/* Search Locations */}
-                  <div className="space-y-2" role="group" aria-labelledby="search-in-label">
-                    <span id="search-in-label" className="text-sm font-medium leading-none">{t('searchPage.searchIn')}</span>
+                  <div className="space-y-3 rounded-xl bg-background/70 p-4" role="group" aria-labelledby="search-in-label">
+                    <span id="search-in-label" className="text-sm font-semibold leading-none">{t('searchPage.searchIn')}</span>
                     <div className="space-y-2">
                       <div className="flex items-center space-x-2">
                         <Checkbox
@@ -449,9 +454,9 @@ export default function SearchPage() {
 
                 {/* Search Results */}
                 {searchMutation.data && (
-                  <div className="mt-6 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-medium">
+                  <div className="mt-7 space-y-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="text-base font-semibold tracking-tight">
                         {t('searchPage.resultsFound', { count: searchMutation.data.total_count })}
                       </h3>
                       <Badge variant="outline">{searchMutation.data.search_type === 'text' ? t('searchPage.textSearch') : t('searchPage.vectorSearch')}</Badge>
@@ -470,13 +475,13 @@ export default function SearchPage() {
                           const modalType = type === 'source_insight' ? 'insight' : type as 'source' | 'note' | 'insight'
 
                           return (
-                          <Card key={index} className="transition-shadow hover:shadow-lift">
-                            <CardContent className="pt-4">
+                          <Card key={index} className="rounded-2xl border-border/60 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                            <CardContent className="p-5">
                               <div className="flex items-start justify-between gap-4">
                                 <div className="flex-1">
                                   <button
                                     onClick={() => openModal(modalType, id)}
-                                    className="text-primary hover:underline font-medium"
+                                    className="text-left font-medium leading-snug text-foreground transition-colors hover:text-primary hover:underline"
                                   >
                                     {result.title}
                                   </button>
@@ -487,8 +492,8 @@ export default function SearchPage() {
                               </div>
 
                               {result.matches && result.matches.length > 0 && (
-                                <Collapsible className="mt-3">
-                                  <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+                                <Collapsible className="mt-4 border-t border-border/50 pt-3">
+                                  <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
                                     <ChevronDown className="h-4 w-4" />
                                     {t('searchPage.matches', { count: result.matches.length })}
                                   </CollapsibleTrigger>
