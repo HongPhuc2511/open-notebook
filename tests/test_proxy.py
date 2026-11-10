@@ -56,13 +56,17 @@ def test_lowercase_and_uppercase_kept_in_sync(monkeypatch):
 def test_merges_both_case_variants(monkeypatch):
     monkeypatch.setenv("no_proxy", "lower.example.com")
     monkeypatch.setenv("NO_PROXY", "UPPER.example.com")
-    ensure_internal_no_proxy()
-    combined = os.environ["no_proxy"]
-    assert "lower.example.com" in combined
-    assert "UPPER.example.com" in combined
-    # De-duped case-insensitively, so no crash and both variants match.
-    assert os.environ["no_proxy"] == os.environ["NO_PROXY"]
 
+    ensure_internal_no_proxy()
+
+    combined = os.environ["no_proxy"]
+    # Windows treats environment variable names case-insensitively.
+    if os.name == "nt":
+        assert "UPPER.example.com" in combined
+    else:
+        assert "lower.example.com" in combined
+        assert "UPPER.example.com" in combined
+    assert "localhost" in combined
 
 def test_idempotent(monkeypatch):
     monkeypatch.setenv("NO_PROXY", "example.com")

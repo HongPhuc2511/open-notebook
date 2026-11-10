@@ -197,7 +197,7 @@ _PROVIDER_SPECS: Tuple[ProviderSpec, ...] = (
         modalities=_LANGUAGE_ONLY,
         required_env=("ZAI_API_KEY",),
         optional_env=("ZAI_BASE_URL",),
-        test_model="glm-5.2",
+        test_model="glm-5.3-flash",
         docs_url="https://z.ai/manage-apikey/apikey-list",
         openai_compat_discovery_url="https://api.z.ai/api/paas/v4/models",
     ),
