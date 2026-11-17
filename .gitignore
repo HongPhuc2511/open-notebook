@@ -158,3 +158,26 @@ history.txt
 # oss-maintainer local state
 .maintainer/profile.local.toml
 .maintainer/state/
+
+# Local backups and temporary files
+.backups/
+_backups/
+_backup-*/
+*.bak
+*.before-*.bak
+
+# Local archives and inspection outputs
+frontend/package.zip
+*.inspection.txt
+ui-inspection.txt
+ui-layout-inspection.txt
+ui-tools-inspection.txt
+
+# Local patch installers
+
+# Local UI inspection outputs
+studio-components-inspection.txt
+studio-feature-inspection.txt
+ui-inspection.txt
+ui-layout-inspection.txt
+ui-tools-inspection.txt

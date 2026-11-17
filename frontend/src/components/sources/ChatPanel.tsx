@@ -77,6 +77,18 @@ export function ChatPanel({
   const { t } = useTranslation()
   const [sessionManagerOpen, setSessionManagerOpen] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
+
+  // Notebook sidebar actions: open chat history or focus the document-question composer.
+  useEffect(() => {
+    const openHistory = () => setSessionManagerOpen(true)
+    const focusComposer = () => window.dispatchEvent(new Event('focus-notebook-chat-composer'))
+    window.addEventListener('open-notebook-chat-history', openHistory)
+    window.addEventListener('focus-notebook-chat-input', focusComposer)
+    return () => {
+      window.removeEventListener('open-notebook-chat-history', openHistory)
+      window.removeEventListener('focus-notebook-chat-input', focusComposer)
+    }
+  }, [])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const { openModal } = useModalManager()
 
@@ -103,10 +115,10 @@ export function ChatPanel({
 
   return (
     <>
-    <Card className="flex flex-col h-full flex-1 overflow-hidden rounded-2xl bg-popover">
-      <CardHeader className="pb-3 flex-shrink-0">
+    <Card className="flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] border border-border/70 bg-background shadow-sm">
+      <CardHeader className="flex-shrink-0 px-6 pb-3 pt-5">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-lg font-normal text-foreground">
+          <CardTitle className="flex items-center gap-2 text-xl font-semibold tracking-tight text-foreground">
             {title || (contextType === 'source' ? t('chat.chatWith', { name: t('navigation.sources') }) : t('chat.chatWith', { name: t('common.notebook') }))}
           </CardTitle>
           {onSelectSession && onCreateSession && onDeleteSession && (
@@ -140,9 +152,9 @@ export function ChatPanel({
           )}
         </div>
       </CardHeader>
-      <CardContent className="flex-1 flex flex-col min-h-0 p-0">
-        <ScrollArea className="flex-1 min-h-0 px-4" ref={scrollAreaRef}>
-          <div className="space-y-4 py-4">
+      <CardContent className="flex min-h-0 flex-1 flex-col p-0">
+        <ScrollArea className="min-h-0 flex-1 px-6" ref={scrollAreaRef}>
+          <div className="space-y-6 py-6">
             {messages.length === 0 ? (
               <div className="text-center text-muted-foreground py-8">
                 <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -179,7 +191,7 @@ export function ChatPanel({
 
         {/* Context Indicators */}
         {contextIndicators && (
-          <div className="border-t px-4 py-2">
+          <div className="border-t border-border/60 px-6 py-3">
             <div className="flex flex-wrap gap-2 text-xs">
               {contextIndicators.sources?.length > 0 && (
                 <Badge variant="outline" className="gap-1">
@@ -222,7 +234,7 @@ export function ChatPanel({
             charCount={notebookContextStats.charCount}
           />
         )}
-        <p className="order-3 px-4 pb-2 pt-1 text-center text-[11px] text-muted-foreground">
+        <p className="order-3 px-5 pb-3 pt-1 text-center text-[11px] text-muted-foreground">
             {t('chat.aiDisclaimer')}
         </p>
       </CardContent>
@@ -249,7 +261,14 @@ function ChatComposer({
 }: ChatComposerProps) {
   const { t } = useTranslation()
   const chatInputId = useId()
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [input, setInput] = useState('')
+
+  useEffect(() => {
+    const focusInput = () => textareaRef.current?.focus()
+    window.addEventListener('focus-notebook-chat-composer', focusInput)
+    return () => window.removeEventListener('focus-notebook-chat-composer', focusInput)
+  }, [])
 
   const handleSend = () => {
     if (input.trim() && !isStreaming) {
@@ -271,13 +290,14 @@ function ChatComposer({
 
   // Detect platform for placeholder text
   const isMac = typeof navigator !== 'undefined' && navigator.userAgent.toUpperCase().indexOf('MAC') >= 0
-  const keyHint = isMac ? '⌘+Enter' : 'Ctrl+Enter'
+  const keyHint = isMac ? 'âŒ˜+Enter' : 'Ctrl+Enter'
 
   return (
-    <div className="order-2 flex-shrink-0 px-4 pb-0 pt-2">
+    <div className="order-2 flex-shrink-0 px-5 pb-2 pt-3">
       {/* One pill holds the input, the model picker and the send button */}
-      <div className="flex min-w-0 items-end gap-2 rounded-3xl border bg-background py-1.5 pl-5 pr-1.5 shadow-sm focus-within:border-primary/50">
+      <div className="flex min-w-0 items-end gap-2 rounded-[28px] border border-border/70 bg-background py-1.5 pl-5 pr-1.5 shadow-md transition-shadow focus-within:border-primary/50 focus-within:shadow-lg">
         <Textarea
+          ref={textareaRef}
           id={chatInputId}
           name="chat-message"
           autoComplete="off"
@@ -302,7 +322,7 @@ function ChatComposer({
           onClick={handleSend}
           disabled={!input.trim() || isStreaming}
           size="icon"
-          className="h-10 w-10 shrink-0 rounded-full"
+          className="h-11 w-11 shrink-0 rounded-full"
         >
           {isStreaming ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -399,3 +419,4 @@ function AIMessageContent({
     </MarkdownRenderer>
   )
 }
+
