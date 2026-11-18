@@ -162,10 +162,10 @@ export function SourcesColumn({
         collapsedIcon={FileText}
         collapsedLabel={t('navigation.sources')}
       >
-        <Card className="h-full flex flex-col flex-1 gap-0 overflow-hidden rounded-xl border border-border/70 bg-background py-0 shadow-none notebook-sources-card">
-          <CardHeader className="flex-shrink-0 px-2.5 pb-1.5 pt-2">
+        <Card className="h-full flex flex-col flex-1 gap-3 overflow-hidden rounded-2xl bg-popover py-5">
+          <CardHeader className="pb-3 flex-shrink-0">
             <div className="flex items-center justify-between gap-2">
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-tight text-foreground">
+              <CardTitle className="flex items-center gap-2 text-lg font-normal text-foreground">
                 
                 {t('navigation.sources')}
               </CardTitle>
@@ -173,7 +173,7 @@ export function SourcesColumn({
                 {onBulkContextModeChange && sources && sources.length > 0 && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" title={t('sources.bulkContext')}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" title={t('sources.bulkContext')}>
                         <ListChecks className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -190,20 +190,9 @@ export function SourcesColumn({
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
-                <Button
-                  size="sm"
-                  variant="tonal"
-                  className="h-7 rounded-full px-2 text-xs"
-                  aria-label={t('common.writeNote')}
-                  title={t('common.writeNote')}
-                  onClick={() => window.dispatchEvent(new Event('open-notebook-note-editor'))}
-                >
-                  <Plus className="h-4 w-4" />
-                  <span className="ml-1">{t('common.writeNote')}</span>
-                </Button>
                 <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
                   <DropdownMenuTrigger asChild>
-                    <Button size="sm" variant="tonal" className="h-7 rounded-full px-2 text-xs" title={t('sources.addSource')}>
+                    <Button size="sm" variant="tonal" className="rounded-full px-3" title={t('sources.addSource')}>
                       <Plus className="h-4 w-4" />
                       <span className="sr-only">{t('sources.addSource')}</span>
                       <ChevronDown className="ml-1 h-4 w-4" />
@@ -225,7 +214,7 @@ export function SourcesColumn({
             </div>
           </CardHeader>
 
-          <CardContent ref={scrollContainerRef} className="min-h-0 flex-1 overflow-y-auto px-1.5 pb-1.5 notebook-sources-content">
+          <CardContent ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0">
             {isLoading ? (
               <div className="flex items-center justify-center py-8">
                 <LoadingSpinner />
@@ -237,10 +226,10 @@ export function SourcesColumn({
                 description={t('sources.createFirstSource')}
               />
             ) : (
-              <div className="space-y-0">
+              <div className="space-y-2">
                 {/* Select-all row above the list, checkbox on the right (NotebookLM style) */}
                 {onBulkContextModeChange && (
-                  <label className="flex cursor-pointer items-center justify-end gap-2 px-2 py-1.5 text-[11px] font-medium text-muted-foreground">
+                  <label className="flex cursor-pointer items-center justify-end gap-3 px-3 py-2 text-sm text-muted-foreground">
                     {t('sources.selectAll')}
                     <Checkbox
                       checked={allSelected}
@@ -252,7 +241,6 @@ export function SourcesColumn({
                   <SourceCard
                     key={source.id}
                     source={source}
-                    compact
                     onClick={handleSourceClick}
                     onDelete={handleDeleteClick}
                     onRetry={handleRetry}
@@ -316,5 +304,3 @@ export function SourcesColumn({
     </>
   )
 }
-
-

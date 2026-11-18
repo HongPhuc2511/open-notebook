@@ -40,7 +40,6 @@ interface SourceCardProps {
   onClick?: (sourceId: string) => void
   onRefresh?: () => void
   className?: string
-  compact?: boolean
   showRemoveFromNotebook?: boolean
   contextMode?: ContextMode
   onContextModeChange?: (mode: ContextMode) => void
@@ -117,7 +116,6 @@ function SourceCardImpl({
   onRemoveFromNotebook,
   onRefresh,
   className,
-  compact = false,
   showRemoveFromNotebook = false,
   contextMode,
   onContextModeChange
@@ -224,20 +222,20 @@ function SourceCardImpl({
   return (
     <Card
       className={cn(
-        'transition-all duration-150 shadow-none border border-transparent bg-transparent rounded-xl hover:bg-white/90 hover:border-emerald-100 hover:shadow-sm group relative cursor-pointer',
+        'transition-colors duration-150 shadow-none border-0 bg-transparent rounded-xl hover:bg-muted group relative cursor-pointer',
         className
       )}
       onClick={handleCardClick}
     >
-      <CardContent className={cn(compact ? "px-2 py-1.5" : "px-3 py-2")}>
+      <CardContent className="px-3 py-1">
         {/* Header with status indicator */}
-        <div className={cn("flex items-center justify-between", compact ? "gap-2" : "items-start gap-3 mb-1")}>
+        <div className="flex items-start justify-between gap-3 mb-1">
           <div className="flex-1 min-w-0">
             {/* Status badge - only show if not completed */}
             {!isCompleted && (
               <div className="flex items-center gap-2 mb-2">
                 <div className={cn(
-                  'flex items-center gap-1 rounded-md font-semibold', compact ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-1 text-xs',
+                  'flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium',
                   statusConfig.bgColor,
                   statusConfig.color
                 )}>
@@ -257,10 +255,10 @@ function SourceCardImpl({
             )}
 
             {/* Title */}
-            <div className={cn("flex min-w-0 items-center gap-1.5", compact ? "mb-0" : "mb-1.5", !isCompleted && !compact && "mb-1")}>
-              <SourceTypeIcon className={cn("shrink-0 text-emerald-600", compact ? "h-4 w-4" : "h-5 w-5")} />
+            <div className={cn('mb-1.5 flex items-center gap-2', !isCompleted && 'mb-1')}>
+              <SourceTypeIcon className="h-5 w-5 shrink-0 text-primary" />
               <h4
-                className={cn("min-w-0 font-medium leading-tight", compact ? "truncate text-xs" : "text-sm line-clamp-2 break-all pr-8")}
+                className="text-sm font-medium leading-tight line-clamp-2 break-all pr-8"
                 title={title}
               >
                 {title}
@@ -275,7 +273,7 @@ function SourceCardImpl({
             )}
 
             {/* One-line metadata row: type + meta in a single muted line */}
-            <div className={cn("min-w-0 items-center gap-1.5 flex-wrap text-muted-foreground", compact ? "mt-0.5 hidden" : "flex text-xs")}>
+            <div className="flex items-center gap-1.5 flex-wrap text-xs text-muted-foreground min-w-0">
               <span className="inline-flex items-center gap-1">
                 <SourceTypeIcon className="h-3 w-3" />
                 {sourceType === 'link' ? t('sources.addUrl') : sourceType === 'upload' ? t('sources.uploadFile') : t('sources.enterText')}
@@ -398,7 +396,7 @@ function SourceCardImpl({
                 handleRetry()
               }}
               disabled={!onRetry}
-              className={cn(compact ? "h-6 px-2 text-[10px]" : "h-7 text-xs")}
+              className="h-7 text-xs"
             >
               <RefreshCw className="h-3 w-3 mr-1" />
               {t('sources.retryProcessing')}

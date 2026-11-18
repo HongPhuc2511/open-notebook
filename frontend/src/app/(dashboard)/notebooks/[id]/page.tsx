@@ -2,14 +2,11 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams } from 'next/navigation'
-import Link from 'next/link'
 import { AppShell } from '@/components/layout/AppShell'
 import { NotebookHeader } from '../components/NotebookHeader'
 import { SourcesColumn } from '../components/SourcesColumn'
 import { NotesColumn } from '../components/NotesColumn'
-import { StudioColumn } from '../components/StudioColumn'
 import { ChatColumn } from '../components/ChatColumn'
-import { WorkspaceToolPanel, type WorkspaceTool } from '../components/WorkspaceToolPanel'
 import { useNotebook } from '@/lib/hooks/use-notebooks'
 import { useNotebookSources } from '@/lib/hooks/use-sources'
 import { useNotes } from '@/lib/hooks/use-notes'
@@ -19,7 +16,7 @@ import { useIsDesktop } from '@/lib/hooks/use-media-query'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { cn } from '@/lib/utils'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { FileText, StickyNote, MessageSquare, BookOpen, Search, Mic, Settings, Sparkles, ChevronRight, History, SearchCheck, FolderOpen, NotebookPen } from 'lucide-react'
+import { FileText, StickyNote, MessageSquare } from 'lucide-react'
 import {
   applyBulkSourceContext,
   applyBulkNoteContext,
@@ -39,9 +36,9 @@ export type { ContextMode, ContextSelections, NoteContextMode }
 const MIN_SIDE_PCT = 16
 const MAX_SIDE_PCT = 40
 const MIN_CHAT_PCT = 30
-const MIN_SIDE_PX = 280
-const MIN_CHAT_PX = 500
-const DEFAULT_WIDTHS = { sources: 22, notes: 23 }
+const MIN_SIDE_PX = 320
+const MIN_CHAT_PX = 380
+const DEFAULT_WIDTHS = { sources: 24, notes: 26 }
 const WIDTHS_STORAGE_KEY = 'notebook-column-widths'
 const KEYBOARD_STEP_PCT = 2
 
@@ -141,9 +138,6 @@ export default function NotebookPage() {
 
   // Mobile tab state (Sources, Notes, or Chat)
   const [mobileActiveTab, setMobileActiveTab] = useState<'sources' | 'notes' | 'chat'>('chat')
-  const [activeTool, setActiveTool] = useState<WorkspaceTool | null>(null)
-  const openWorkspaceTool = (tool: WorkspaceTool) => { setActiveTool(tool); if (!isDesktop) setMobileActiveTab('chat') }
-  const closeWorkspaceTool = () => setActiveTool(null)
 
   // Desktop column widths (drag the handles between columns to resize)
   const columnsRef = useRef<HTMLDivElement>(null)
@@ -312,188 +306,171 @@ export default function NotebookPage() {
 
   const columnTransition = isDragging ? '' : 'transition-all duration-150'
 
-  const toolButton = (tool: WorkspaceTool, label: string) => (
-    <button
-      key={tool}
-      type="button"
-      onClick={() => openWorkspaceTool(tool)}
-      className={cn(
-        'flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors',
-        activeTool === tool ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-      )}
-    >
-      <Sparkles className="size-4 shrink-0" />
-      <span className="min-w-0 flex-1 truncate">{label}</span>
-      <ChevronRight className="size-3.5 opacity-50" />
-    </button>
-  )
-
-  const workspacePanel = (
-    <WorkspaceToolPanel
-      tool={activeTool}
-      onBack={closeWorkspaceTool}
-      notebookId={notebookId}
-      notebookName={notebook?.name}
-      sources={sources}
-      sourcesLoading={sourcesLoading}
-      notes={notes}
-      notesLoading={notesLoading}
-      contextSelections={contextSelections}
-      onSourceContextModeChange={handleSourceContextModeChange}
-      onBulkSourceContext={handleBulkSourceContext}
-      onNoteContextModeChange={handleNoteContextModeChange}
-      onBulkNoteContext={handleBulkNoteContext}
-      onRefreshSources={refetchSources}
-      hasNextPage={hasNextPage}
-      isFetchingNextPage={isFetchingNextPage}
-      fetchNextPage={fetchNextPage}
-    />
-  )
-
   return (
-    <AppShell hideSidebar>
-      <div className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-background">
-        {/* Global workspace top navigation */}
-        <header className="z-10 flex h-[64px] shrink-0 items-center justify-between border-b border-border/70 bg-background px-4 md:px-7">
-          <div className="flex min-w-0 items-center gap-5">
-            <Link href="/notebooks" className="flex shrink-0 items-center gap-3 pr-4">
-              <span className="flex items-center gap-[3px]" aria-hidden="true">
-                <span className="size-2.5 rounded-[3px] bg-fern" />
-                <span className="size-2.5 rounded-[3px] bg-gold" />
-                <span className="size-2.5 rounded-[3px] bg-teal" />
-              </span>
-              <span className="hidden text-lg font-semibold tracking-tight sm:inline">Open Notebook</span>
-            </Link>
-            <nav className="hidden items-center gap-2 md:flex" aria-label="Main navigation">
-              <Link href="/notebooks" aria-current="page" className="rounded-full bg-primary/10 px-4 py-2 text-sm font-semibold text-primary">Notebooks</Link>
-              <Link href="/search" className="rounded-full px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground">Ask and Search</Link>
-              <Link href="/podcasts" className="rounded-full px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground">Podcasts</Link>
-            </nav>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <Link href="/search" aria-label="Search" className="rounded-full p-2 text-muted-foreground hover:bg-muted"><Search className="size-5" /></Link>
-            <Link href="/settings" aria-label="Settings" className="rounded-full p-2 text-muted-foreground hover:bg-muted"><Settings className="size-5" /></Link>
-            <span className="ml-1 flex size-9 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">ON</span>
-          </div>
-        </header>
-
-        <div className="flex min-h-0 flex-1 overflow-hidden">
-          {/* Redesigned left workspace: navigation + live source library */}
-          <aside className="notebook-left-rail hidden w-[356px] shrink-0 flex-col border-r lg:flex 2xl:w-[380px]">
-            <div className="workspace-identity shrink-0 px-5 pb-4 pt-5">
-              <div className="flex items-center gap-3">
-                <span className="workspace-mark flex size-10 items-center justify-center rounded-2xl text-white"><BookOpen className="size-5" /></span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-indigo-500">OPEN NOTEBOOK / WORKSPACE</p>
-                  <h2 className="mt-0.5 truncate text-sm font-bold text-slate-900">{notebook.name}</h2>
-                </div>
-                <span className="rounded-full border border-indigo-100 bg-white/80 px-2 py-1 text-[10px] font-bold text-indigo-600">ACTIVE</span>
-              </div>
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                <button type="button" onClick={() => window.dispatchEvent(new Event('open-notebook-note-editor'))} className="workspace-primary-action flex items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm font-bold text-white"><StickyNote className="size-4" />Write Note</button>
-                <button type="button" onClick={() => openWorkspaceTool('sources')} className="workspace-source-action flex items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm font-bold"><FileText className="size-4" />Add / Browse</button>
-              </div>
-            </div>
-
-            <nav className="workspace-navigation shrink-0 px-4 pb-4 pt-3" aria-label="Notebook navigation">
-              <p className="workspace-nav-caption">NOTEBOOK WORKSPACE</p>
-              <button
-                type="button"
-                onClick={() => {
-                  closeWorkspaceTool()
-                  window.dispatchEvent(new Event('open-notebook-chat-history'))
-                }}
-                className="workspace-nav-item w-full"
-              >
-                <span className="workspace-nav-icon icon-blue"><History className="size-[17px]" /></span>
-                <span className="min-w-0 flex-1 text-left">Lịch sử trò chuyện</span>
-                <ChevronRight className="size-4 text-slate-400" />
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  closeWorkspaceTool()
-                  window.dispatchEvent(new Event('focus-notebook-chat-input'))
-                }}
-                className="workspace-nav-item w-full"
-              >
-                <span className="workspace-nav-icon icon-violet"><SearchCheck className="size-[17px]" /></span>
-                <span className="min-w-0 flex-1 text-left">Tìm kiếm tài liệu</span>
-                <ChevronRight className="size-4 text-slate-400" />
-              </button>
-              <button type="button" onClick={() => openWorkspaceTool('notes')} className="workspace-nav-item w-full">
-                <span className="workspace-nav-icon icon-pink"><NotebookPen className="size-[17px]" /></span>
-                <span className="min-w-0 flex-1 text-left">Ghi chú</span>
-                <ChevronRight className="size-4 text-slate-400" />
-              </button>
-              <button type="button" onClick={() => openWorkspaceTool('sources')} className="workspace-nav-item w-full">
-                <span className="workspace-nav-icon icon-green"><FolderOpen className="size-[17px]" /></span>
-                <span className="min-w-0 flex-1 text-left">Quản lý tài liệu</span>
-                <ChevronRight className="size-4 text-slate-400" />
-              </button>
-              <button type="button" onClick={() => openWorkspaceTool('notebooks')} className="workspace-nav-item w-full">
-                <span className="workspace-nav-icon icon-cyan"><BookOpen className="size-[17px]" /></span>
-                <span className="min-w-0 flex-1 text-left">Notebook của tôi</span>
-                <ChevronRight className="size-4 text-slate-400" />
-              </button>
-              <p className="workspace-nav-caption mt-4">WORKSPACE TOOLS</p>
-              <button type="button" onClick={() => openWorkspaceTool('playground')} className="workspace-nav-item w-full">
-                <span className="workspace-nav-icon icon-amber"><Sparkles className="size-[17px]" /></span>
-                <span className="min-w-0 flex-1 text-left">Studio & AI tools</span>
-                <ChevronRight className="size-4 text-slate-400" />
-              </button>
-            </nav>
-
-            <section className="workspace-source-zone flex min-h-0 flex-1 flex-col px-3 pb-3 pt-2">
-              <div className="mb-2 flex shrink-0 items-center justify-between px-2">
-                <div><p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-emerald-700">SOURCE LIBRARY</p><p className="mt-0.5 text-[11px] text-slate-500">Documents connected to this notebook</p></div>
-                <span className="rounded-full border border-emerald-200 bg-white/80 px-2.5 py-1 text-[10px] font-bold text-emerald-700">{sources?.length ?? 0} FILES</span>
-              </div>
-              <div className="min-h-0 flex-1 overflow-hidden rounded-[20px]">
-                <SourcesColumn
-                  sources={sources} isLoading={sourcesLoading} notebookId={notebookId} notebookName={notebook?.name}
-                  onRefresh={refetchSources} contextSelections={contextSelections.sources}
-                  onContextModeChange={handleSourceContextModeChange} onBulkContextModeChange={handleBulkSourceContext}
-                  hasNextPage={hasNextPage} isFetchingNextPage={isFetchingNextPage} fetchNextPage={fetchNextPage}
-                />
-              </div>
-            </section>
-            <div className="workspace-settings shrink-0 px-5 py-3">
-              <Link href="/settings" className="flex items-center gap-2.5 text-xs font-semibold text-slate-600 transition-colors hover:text-indigo-700"><span className="flex size-8 items-center justify-center rounded-xl bg-white text-slate-500 shadow-sm"><Settings className="size-4" /></span>Settings & preferences<span className="ml-auto text-[10px] text-slate-400">Manage</span></Link>
-            </div>
-          </aside>
-
-          {/* Main chat/workspace area. Chat stays mounted while a tool is open. */}
-          <main className="notebook-chat-stage flex min-w-0 flex-1 flex-col overflow-hidden">
-            <div className="flex min-h-0 flex-1 flex-col p-3 md:p-4 xl:p-5">
-              <div className="notebook-chat-frame min-h-0 flex-1 overflow-hidden rounded-[26px] border bg-background">
-                <div className={activeTool ? 'hidden h-full min-h-0' : 'h-full min-h-0'}>
-                  <ChatColumn notebookId={notebookId} contextSelections={contextSelections} sources={sources} sourcesLoading={sourcesLoading} />
-                </div>
-                {activeTool && <div className="h-full min-h-0">{workspacePanel}</div>}
-              </div>
-            </div>
-          </main>
-
-          {/* Right Studio panel */}
-          <aside className="notebook-studio-rail hidden w-[356px] shrink-0 border-l p-3 xl:block 2xl:w-[390px]">
-            <StudioColumn onOpenTool={openWorkspaceTool} />
-          </aside>
+    <AppShell>
+      <div className="flex flex-col flex-1 min-h-0">
+        <div className="flex-shrink-0 px-8 pt-1 pb-0">
+          <NotebookHeader notebook={notebook} />
         </div>
 
-        {/* Compact mobile navigation */}
-        <div className="flex shrink-0 items-center justify-around border-t border-border/70 bg-background px-2 py-2 lg:hidden">
-          <button type="button" onClick={() => { closeWorkspaceTool(); setMobileActiveTab('sources') }} className="flex flex-col items-center gap-1 px-3 py-1 text-[11px] text-muted-foreground"><FileText className="size-4" />Sources</button>
-          <button type="button" onClick={() => { closeWorkspaceTool(); setMobileActiveTab('chat') }} className="flex flex-col items-center gap-1 px-3 py-1 text-[11px] text-muted-foreground"><MessageSquare className="size-4" />Chat</button>
-          <button type="button" onClick={() => openWorkspaceTool('notes')} className="flex flex-col items-center gap-1 px-3 py-1 text-[11px] text-muted-foreground"><StickyNote className="size-4" />Notes</button>
-          <button type="button" onClick={() => openWorkspaceTool('podcast')} className="flex flex-col items-center gap-1 px-3 py-1 text-[11px] text-muted-foreground"><Sparkles className="size-4" />Studio</button>
-        </div>
-        <div className="lg:hidden">
-          {mobileActiveTab === 'sources' && <div className="fixed inset-0 z-20 bg-background p-3 pt-16"><SourcesColumn sources={sources} isLoading={sourcesLoading} notebookId={notebookId} notebookName={notebook?.name} onRefresh={refetchSources} contextSelections={contextSelections.sources} onContextModeChange={handleSourceContextModeChange} onBulkContextModeChange={handleBulkSourceContext} hasNextPage={hasNextPage} isFetchingNextPage={isFetchingNextPage} fetchNextPage={fetchNextPage} /></div>}
-          {mobileActiveTab === 'chat' && activeTool && <div className="fixed inset-0 z-20 bg-background p-3 pt-16">{workspacePanel}</div>}
+        <div className="flex-1 px-8 pb-4 pt-2 overflow-x-auto flex flex-col">
+          {/* Mobile: Tabbed interface - only render on mobile to avoid double-mounting */}
+          {!isDesktop && (
+            <>
+              <div className="lg:hidden mb-4">
+                <Tabs value={mobileActiveTab} onValueChange={(value) => setMobileActiveTab(value as 'sources' | 'notes' | 'chat')}>
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="sources" className="gap-2">
+                      <FileText className="h-4 w-4" />
+                      {t('navigation.sources')}
+                    </TabsTrigger>
+                    <TabsTrigger value="notes" className="gap-2">
+                      <StickyNote className="h-4 w-4" />
+                      {t('common.notes')}
+                    </TabsTrigger>
+                    <TabsTrigger value="chat" className="gap-2">
+                      <MessageSquare className="h-4 w-4" />
+                      {t('common.chat')}
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+
+              {/* Mobile: Show only active tab */}
+              <div className="flex-1 overflow-hidden lg:hidden">
+                {mobileActiveTab === 'sources' && (
+                  <SourcesColumn
+                    sources={sources}
+                    isLoading={sourcesLoading}
+                    notebookId={notebookId}
+                    notebookName={notebook?.name}
+                    onRefresh={refetchSources}
+                    contextSelections={contextSelections.sources}
+                    onContextModeChange={handleSourceContextModeChange}
+                    onBulkContextModeChange={handleBulkSourceContext}
+                    hasNextPage={hasNextPage}
+                    isFetchingNextPage={isFetchingNextPage}
+                    fetchNextPage={fetchNextPage}
+                  />
+                )}
+                {mobileActiveTab === 'notes' && (
+                  <NotesColumn
+                    notes={notes}
+                    isLoading={notesLoading}
+                    notebookId={notebookId}
+                    contextSelections={contextSelections.notes}
+                    onContextModeChange={handleNoteContextModeChange}
+                    onBulkContextModeChange={handleBulkNoteContext}
+                  />
+                )}
+                {mobileActiveTab === 'chat' && (
+                  <ChatColumn
+                    notebookId={notebookId}
+                    contextSelections={contextSelections}
+                    sources={sources}
+                    sourcesLoading={sourcesLoading}
+                  />
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Desktop: Sources | Chat | Notes, with draggable handles between columns.
+              Visual order is set with `order-*` so the JSX order can stay as it was. */}
+          <div
+            ref={columnsRef}
+            className={cn(
+              'hidden lg:flex h-full min-h-0 flex-row',
+              isDragging && 'cursor-col-resize select-none'
+            )}
+          >
+            {/* Sources Column */}
+            <div
+              className={cn(
+                'order-1 min-h-0',
+                columnTransition,
+                sourcesCollapsed ? 'w-12 flex-shrink-0' : 'flex-none'
+              )}
+              style={sourcesCollapsed ? undefined : { width: `${widths.sources}%`, minWidth: MIN_SIDE_PX }}
+            >
+              <SourcesColumn
+                sources={sources}
+                isLoading={sourcesLoading}
+                notebookId={notebookId}
+                notebookName={notebook?.name}
+                onRefresh={refetchSources}
+                contextSelections={contextSelections.sources}
+                onContextModeChange={handleSourceContextModeChange}
+                onBulkContextModeChange={handleBulkSourceContext}
+                hasNextPage={hasNextPage}
+                isFetchingNextPage={isFetchingNextPage}
+                fetchNextPage={fetchNextPage}
+              />
+            </div>
+
+            {/* Handle between Sources and Chat (a plain gap while Sources is collapsed) */}
+            {sourcesCollapsed ? (
+              <div className="order-2 w-4 shrink-0" aria-hidden />
+            ) : (
+              <ResizeHandle
+                className="order-2"
+                label={t('navigation.sources')}
+                value={widths.sources}
+                onDragStart={() => setIsDragging(true)}
+                onDrag={(x) => dragColumn('sources', x)}
+                onDragEnd={() => setIsDragging(false)}
+                onNudge={(d) => nudgeColumn('sources', d)}
+                onReset={() => resetColumn('sources')}
+              />
+            )}
+
+            {/* Chat Column - always expanded, takes remaining space */}
+            <div className={cn('order-3 min-h-0 min-w-0 flex-1', columnTransition)}>
+              <ChatColumn
+                notebookId={notebookId}
+                contextSelections={contextSelections}
+                sources={sources}
+                sourcesLoading={sourcesLoading}
+              />
+            </div>
+
+            {/* Handle between Chat and Notes (a plain gap while Notes is collapsed) */}
+            {notesCollapsed ? (
+              <div className="order-4 w-4 shrink-0" aria-hidden />
+            ) : (
+              <ResizeHandle
+                className="order-4"
+                label={t('common.notes')}
+                value={widths.notes}
+                onDragStart={() => setIsDragging(true)}
+                onDrag={(x) => dragColumn('notes', x)}
+                onDragEnd={() => setIsDragging(false)}
+                onNudge={(d) => nudgeColumn('notes', d)}
+                onReset={() => resetColumn('notes')}
+              />
+            )}
+
+            {/* Notes Column */}
+            <div
+              className={cn(
+                'order-5 min-h-0',
+                columnTransition,
+                notesCollapsed ? 'w-12 flex-shrink-0' : 'flex-none'
+              )}
+              style={notesCollapsed ? undefined : { width: `${widths.notes}%`, minWidth: MIN_SIDE_PX }}
+            >
+              <NotesColumn
+                notes={notes}
+                isLoading={notesLoading}
+                notebookId={notebookId}
+                contextSelections={contextSelections.notes}
+                onContextModeChange={handleNoteContextModeChange}
+                onBulkContextModeChange={handleBulkNoteContext}
+              />
+            </div>
+          </div>
         </div>
       </div>
     </AppShell>
   )
 }
-
