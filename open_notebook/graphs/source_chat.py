@@ -21,6 +21,13 @@ from open_notebook.utils.context_builder import (
 )
 from open_notebook.utils.error_classifier import classify_error
 from open_notebook.utils.text_utils import extract_text_content
+from langchain_core.messages import AIMessage
+from open_notebook.utils.topic_guard import check_message
+from open_notebook.utils.citation_context import (
+    append_citations_block,
+    build_numbered_context,
+    strip_citations_block,
+)
 
 
 class SourceChatState(TypedDict):
@@ -72,6 +79,14 @@ def _call_model_with_source_context_inner(
     source_id = state.get("source_id")
     if not source_id:
         raise ValueError("source_id is required in state")
+    last_user = next(
+        (m for m in reversed(state.get("messages", [])) if getattr(m, "type", None) == "human"),
+        None,
+    )
+    if last_user is not None:
+        refusal = check_message(extract_text_content(last_user.content))
+        if refusal:
+            return {"messages": AIMessage(content=refusal)}
 
     # Build source context using build_source_context (run async code in new loop)
     def build_context():
@@ -142,12 +157,23 @@ def _call_model_with_source_context_inner(
         "context": formatted_context,
         "context_indicators": context_indicators,
     }
+    numbered_context, citation_registry = build_numbered_context(context_data)
+    prompt_data["context"] = numbered_context or formatted_context
 
     # Apply the source_chat prompt template
     system_prompt = Prompter(prompt_template="source_chat/system").render(
         data=prompt_data
     )
-    payload = [SystemMessage(content=system_prompt)] + state.get("messages", [])
+    history = []
+    for m in state.get("messages", []):
+        if (
+            getattr(m, "type", None) == "ai"
+            and isinstance(m.content, str)
+            and "<citations>" in m.content
+        ):
+            m = m.model_copy(update={"content": strip_citations_block(m.content)})
+        history.append(m)
+    payload = [SystemMessage(content=system_prompt)] + history
 
     # Handle async model provisioning from sync context
     def run_in_new_loop():
@@ -201,7 +227,9 @@ def _call_model_with_source_context_inner(
             "The model returned an empty response. Try again, or pick a "
             "different model if this keeps happening."
         )
-    cleaned_message = ai_message.model_copy(update={"content": cleaned_content})
+    cleaned_message = ai_message.model_copy(
+        update={"content": append_citations_block(cleaned_content, citation_registry)}
+    )
 
     # Update state with context information
     return {

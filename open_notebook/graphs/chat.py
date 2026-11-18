@@ -3,7 +3,7 @@ import sqlite3
 from typing import Annotated, Optional
 
 from ai_prompter import Prompter
-from langchain_core.messages import SystemMessage
+from langchain_core.messages import AIMessage,SystemMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, START, StateGraph
@@ -17,6 +17,12 @@ from open_notebook.exceptions import IncompleteGenerationError, OpenNotebookErro
 from open_notebook.utils import clean_thinking_content
 from open_notebook.utils.error_classifier import classify_error
 from open_notebook.utils.text_utils import extract_text_content
+from open_notebook.utils.citation_context import (
+    append_citations_block,
+    build_numbered_context,
+    strip_citations_block,
+)
+from open_notebook.utils.topic_guard import check_message
 
 
 class ThreadState(TypedDict):
@@ -29,8 +35,32 @@ class ThreadState(TypedDict):
 
 def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict:
     try:
-        system_prompt = Prompter(prompt_template="chat/system").render(data=state)  # type: ignore[arg-type]
-        payload = [SystemMessage(content=system_prompt)] + state.get("messages", [])
+        last_user = next(
+            (m for m in reversed(state.get("messages", [])) if getattr(m, "type", None) == "human"),
+            None,
+        )
+        if last_user is not None:
+            refusal = check_message(extract_text_content(last_user.content))
+            if refusal:
+                return {"messages": AIMessage(content=refusal)}
+        numbered_context, citation_registry = build_numbered_context(
+            state.get("context")
+        )
+        prompt_data = dict(state)
+        prompt_data["context"] = numbered_context
+        system_prompt = Prompter(prompt_template="chat/system").render(data=prompt_data)  # type: ignore[arg-type]
+
+        # Don't resend old <citations> blocks to the model.
+        history = []
+        for m in state.get("messages", []):
+            if (
+                getattr(m, "type", None) == "ai"
+                and isinstance(m.content, str)
+                and "<citations>" in m.content
+            ):
+                m = m.model_copy(update={"content": strip_citations_block(m.content)})
+            history.append(m)
+        payload = [SystemMessage(content=system_prompt)] + history
         model_id = config.get("configurable", {}).get("model_id") or state.get(
             "model_override"
         )
@@ -82,8 +112,10 @@ def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict
                 "The model returned an empty response. Try again, or pick a "
                 "different model if this keeps happening."
             )
-        cleaned_message = ai_message.model_copy(update={"content": cleaned_content})
-
+        cleaned_message = ai_message.model_copy(
+            update={"content": append_citations_block(cleaned_content, citation_registry)}
+        )
+         
         return {"messages": cleaned_message}
     except OpenNotebookError:
         raise

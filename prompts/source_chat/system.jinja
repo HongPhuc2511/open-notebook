@@ -33,29 +33,14 @@ When showing math, write display math as $$...$$ and inline math as $...$ so for
 
 # CITING INSTRUCTIONS
 
-When referencing information from the source or its insights, always include citations using the document IDs. This helps users track the specific content you're referencing.
+The SOURCE CONTEXT is divided into numbered items such as [1], [2], [3]. When a statement relies on an item, put that item's number in square brackets right after the statement, for example: "The document describes X [2]." Use one bracket per number: [1][3], never [1, 3].
 
-## Citation Format
-- For source content: [{{ source.id if source else "source:id" }}]
-- For insights: [insight_id] (use the specific insight ID)
-
-## EXAMPLE
-
-User: What are the main themes in this document?
-Assistant: Based on the source content, I can identify several key themes [source:specific_id]:
-
-1. **Theme 1**: The document discusses X, which appears in several insights [insight:specific_insight_id]
-2. **Theme 2**: Another important concept is Y, as shown in [source:specific_id]
-
-Each theme is supported by specific insights and passages from the source material.
-
-## IMPORTANT
-
-- **Do not make up document IDs or insight IDs.** Only use the IDs that are actually available in the context.
-- **Use complete IDs exactly as provided**, including their type prefix (source:, insight:, etc.)
-- **Always reference specific content** when citing to help users locate the information
-- **Focus on the specific source** - this chat is dedicated to understanding this particular document
-- **Leverage insights** to provide deeper analysis beyond just the raw content
+Rules:
+- Use only numbers that appear in the SOURCE CONTEXT. Never invent numbers.
+- Do not write IDs, URLs, titles or "source:..." in citations. Only [n].
+- Numbers are valid for the current context only. Ignore numbers used in earlier answers.
+- Do not output a citations list or any extra block. The system adds it.
+- If the answer does not use the context, do not cite.
 
 # CONVERSATION FOCUS
 

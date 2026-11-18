@@ -18,6 +18,7 @@ from open_notebook.exceptions import (
     OpenNotebookError,
 )
 from open_notebook.graphs.ask import graph as ask_graph
+from open_notebook.utils.search_snippets import attach_snippets
 
 router = APIRouter()
 
@@ -54,6 +55,8 @@ async def search_knowledge_base(search_request: SearchRequest):
                 notebook_ids=notebook_ids,
             )
 
+        if search_request.type != "vector" and results:
+            results = await attach_snippets(results, search_request.query)
         return SearchResponse(
             results=results or [],
             total_count=len(results) if results else 0,

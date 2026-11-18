@@ -24,6 +24,28 @@ import { StreamingResponse } from '@/components/search/StreamingResponse'
 import { AdvancedModelsDialog } from '@/components/search/AdvancedModelsDialog'
 import { SaveToNotebooksDialog } from '@/components/search/SaveToNotebooksDialog'
 import { NotebookScopeSelector } from '@/components/search/NotebookScopeSelector'
+import { useCitationHighlightStore } from '@/lib/stores/citation-highlight-store'
+
+function Highlighted({ text, query }: { text: string; query: string }) {
+  const words = query
+    .split(/\s+/)
+    .filter((w) => w.length >= 2)
+    .map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  if (words.length === 0) return <>{text}</>
+  const parts = text.replace(/`/g, '').split(new RegExp(`(${words.join('|')})`, 'giu'))
+  const re = new RegExp(`^(?:${words.join('|')})$`, 'iu')
+  return (
+    <>
+      {parts.map((p, i) =>
+        re.test(p) ? (
+          <mark key={i} className="rounded bg-yellow-300/60 px-0.5 text-inherit">{p}</mark>
+        ) : (
+          <span key={i}>{p}</span>
+        )
+      )}
+    </>
+  )
+}
 
 export default function SearchPage() {
   const { t } = useTranslation()
@@ -67,6 +89,7 @@ export default function SearchPage() {
   const { data: modelDefaults, isLoading: modelsLoading } = useModelDefaults()
   const { data: availableModels } = useModels()
   const { openModal } = useModalManager()
+  const setQuote = useCitationHighlightStore((s) => s.setQuote)
 
   const modelNameById = useMemo(() => {
     if (!availableModels) {
@@ -492,19 +515,21 @@ export default function SearchPage() {
                               </div>
 
                               {result.matches && result.matches.length > 0 && (
-                                <Collapsible className="mt-4 border-t border-border/50 pt-3">
-                                  <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-                                    <ChevronDown className="h-4 w-4" />
-                                    {t('searchPage.matches', { count: result.matches.length })}
-                                  </CollapsibleTrigger>
-                                  <CollapsibleContent className="mt-2 space-y-1">
-                                    {result.matches.map((match, i) => (
-                                      <div key={i} className="text-sm pl-6 py-1 border-l-2 border-muted">
-                                        {match}
-                                      </div>
-                                    ))}
-                                  </CollapsibleContent>
-                                </Collapsible>
+                                <div className="mt-3 space-y-1.5 border-t border-border/50 pt-3">
+                                  {result.matches.slice(0, 3).map((match, i) => (
+                                    <button
+                                      key={i}
+                                      type="button"
+                                      onClick={() => {
+                                        setQuote(type === 'source' ? match.replace(/`/g, '').replace(/…/g, '') : null)
+                                        openModal(modalType, id)
+                                      }}
+                                      className="block w-full border-l-2 border-muted py-1 pl-3 text-left text-sm text-muted-foreground hover:border-primary hover:text-foreground"
+                                    >
+                                      <Highlighted text={match} query={searchQuery} />
+                                    </button>
+                                  ))}
+                                </div>
                               )}
                             </CardContent>
                           </Card>
