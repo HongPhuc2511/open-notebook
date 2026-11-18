@@ -10,9 +10,13 @@ interface AppShellProps {
   hideSidebar?: boolean
   // Page-specific controls rendered inside the top bar (e.g. search, view toggle)
   topBarActions?: React.ReactNode
+  /** Render content inside an existing workspace without a second app shell. */
+  embedded?: boolean
 }
 
-export function AppShell({ children, hideSidebar = false, topBarActions }: AppShellProps) {
+export function AppShell({ children, hideSidebar = false, topBarActions, embedded = false }: AppShellProps) {
+  if (embedded) return <>{children}</>
+
   return (
     <div className="flex h-screen flex-col overflow-hidden">
       {!hideSidebar && <AppTopBar actions={topBarActions} />}

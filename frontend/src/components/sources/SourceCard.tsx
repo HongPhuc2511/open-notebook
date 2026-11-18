@@ -222,14 +222,14 @@ function SourceCardImpl({
   return (
     <Card
       className={cn(
-        'transition-colors duration-150 shadow-none border-0 bg-transparent rounded-xl hover:bg-muted group relative cursor-pointer',
+        'transition-colors duration-150 shadow-none border-0 bg-transparent rounded-lg hover:bg-muted group relative cursor-pointer',
         className
       )}
       onClick={handleCardClick}
     >
-      <CardContent className="px-3 py-1">
+      <CardContent className="px-2 py-1">
         {/* Header with status indicator */}
-        <div className="flex items-start justify-between gap-3 mb-1">
+        <div className="flex items-start justify-between gap-2 mb-0">
           <div className="flex-1 min-w-0">
             {/* Status badge - only show if not completed */}
             {!isCompleted && (
@@ -255,10 +255,10 @@ function SourceCardImpl({
             )}
 
             {/* Title */}
-            <div className={cn('mb-1.5 flex items-center gap-2', !isCompleted && 'mb-1')}>
-              <SourceTypeIcon className="h-5 w-5 shrink-0 text-primary" />
+            <div className={cn('mb-0 flex items-center gap-1.5', !isCompleted && 'mb-0')}>
+              <SourceTypeIcon className="h-4 w-4 shrink-0 text-primary" />
               <h4
-                className="text-sm font-medium leading-tight line-clamp-2 break-all pr-8"
+                className="text-xs font-medium leading-tight line-clamp-2 break-words pr-7"
                 title={title}
               >
                 {title}
@@ -273,7 +273,7 @@ function SourceCardImpl({
             )}
 
             {/* One-line metadata row: type + meta in a single muted line */}
-            <div className="flex items-center gap-1.5 flex-wrap text-xs text-muted-foreground min-w-0">
+            <div className="flex items-center gap-1 flex-wrap text-[10px] leading-tight text-muted-foreground min-w-0 pl-[22px]">
               <span className="inline-flex items-center gap-1">
                 <SourceTypeIcon className="h-3 w-3" />
                 {sourceType === 'link' ? t('sources.addUrl') : sourceType === 'upload' ? t('sources.uploadFile') : t('sources.enterText')}

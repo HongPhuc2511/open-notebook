@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { NoteResponse } from '@/lib/types/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -68,6 +68,13 @@ export function NotesColumn({
     setEditorOpen(true)
   }
 
+  // Allow the notebook workspace header to open the existing note editor.
+  useEffect(() => {
+    const openEditor = () => { setEditingNote(undefined); setEditorOpen(true) }
+    window.addEventListener('open-notebook-note-editor', openEditor)
+    return () => window.removeEventListener('open-notebook-note-editor', openEditor)
+  }, [])
+
   const handleDeleteConfirm = async () => {
     if (!noteToDelete) return
 
@@ -92,7 +99,7 @@ export function NotesColumn({
           <CardHeader className="pb-3 flex-shrink-0">
             <div className="flex items-center justify-between gap-2">
               <CardTitle className="flex items-center gap-2 text-lg font-normal text-foreground">
-                {t('notebooks.studioTitle')}
+                {t('common.notes')}
               </CardTitle>
               <div className="flex shrink-0 items-center gap-1">
                 {onBulkContextModeChange && notes && notes.length > 0 && (

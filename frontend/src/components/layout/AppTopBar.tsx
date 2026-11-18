@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
@@ -276,7 +276,7 @@ export function AppTopBar({ actions }: AppTopBarProps) {
               {t('common.quickActions')}
             </span>
             <kbd className="rounded border bg-muted px-1.5 font-mono text-[10px]">
-              {isMac ? '⌘' : 'Ctrl+'}K
+              {isMac ? 'âŒ˜' : 'Ctrl+'}K
             </kbd>
           </div>
           <DropdownMenuSeparator />
