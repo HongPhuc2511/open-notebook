@@ -33,7 +33,23 @@ When showing math, write display math as $$...$$ and inline math as $...$ so for
 
 # CITING INSTRUCTIONS
 
-When referencing information from the source or its insights, always include citations using the document IDs. This helps users track the specific content you're referencing.
+Whenever a statement relies on the CONTEXT, cite it with a numbered marker such as [1], [2] placed right after the statement. Reuse the same number if you cite the same passage again.
+
+At the very end of your answer, after all text, add exactly one block in this format:
+
+<citations>
+[
+  {"n": 1, "ref": "source:abc123", "quote": "exact words copied from the document"},
+  {"n": 2, "ref": "source_insight:xyz789", "quote": "exact words copied from the insight"}
+]
+</citations>
+
+Rules:
+- "ref" must be the complete ID exactly as it appears in the context, including its type prefix. Never invent IDs.
+- "quote" must be copied VERBATIM from that document, in its original language, as ONE continuous passage of 8 to 30 words. No paraphrasing, no ellipsis, no translation.
+- Every [n] in the text must have an entry in the block, and every entry must be used in the text.
+- Do not put [n] markers inside code blocks. The block must be valid JSON.
+- If your answer does not use the context, do not output the block.
 
 ## Citation Format
 - For source content: [{{ source.id if source else "source:id" }}]

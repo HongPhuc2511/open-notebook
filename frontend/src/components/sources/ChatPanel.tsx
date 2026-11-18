@@ -1,6 +1,6 @@
 'use client'
 
-import { memo, useCallback, useState, useRef, useEffect, useId } from 'react'
+import { memo,useMemo, useCallback, useState, useRef, useEffect, useId } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -22,6 +22,9 @@ import { convertReferencesToCompactMarkdown, createCompactReferenceLinkComponent
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
 import { toast } from 'sonner'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { extractCitations, linkifyCitations } from '@/lib/utils/citations'
+import { createCitationLinkComponent } from '@/components/sources/CitationLink'
+import { useCitationHighlightStore } from '@/lib/stores/citation-highlight-store'
 
 interface NotebookContextStats {
   sourcesInsights: number
@@ -385,17 +388,34 @@ function AIMessageContent({
   onReferenceClick: (type: string, id: string) => void
 }) {
   const { t } = useTranslation()
-  // Convert references to compact markdown with numbered citations
-  const markdownWithCompactRefs = convertReferencesToCompactMarkdown(content, t('common.references'))
+  const setQuote = useCitationHighlightStore((s) => s.setQuote)
 
-  // Create custom link component for compact references
-  const LinkComponent = createCompactReferenceLinkComponent(onReferenceClick)
+  const { text, citations } = useMemo(() => extractCitations(content), [content])
+
+  const markdown = useMemo(
+    () =>
+      citations.length > 0
+        ? linkifyCitations(text, citations)
+        : convertReferencesToCompactMarkdown(text, t('common.references')),
+    [text, citations, t]
+  )
+
+  // useMemo để component không bị tạo lại mỗi lần render, nếu không popover đang mở sẽ tự đóng khi stream.
+  const LinkComponent = useMemo(() => {
+    const fallback = createCompactReferenceLinkComponent(onReferenceClick)
+    return createCitationLinkComponent(
+      citations,
+      (c) => {
+        setQuote(c.type === 'source' ? c.quote : null) // chỉ nguồn gốc mới có full_text để highlight
+        onReferenceClick(c.type, c.id)
+      },
+      fallback
+    )
+  }, [citations, onReferenceClick, setQuote])
 
   return (
-    <MarkdownRenderer components={{
-      a: LinkComponent
-    }}>
-      {markdownWithCompactRefs}
+    <MarkdownRenderer components={{ a: LinkComponent }}>
+      {markdown}
     </MarkdownRenderer>
   )
 }

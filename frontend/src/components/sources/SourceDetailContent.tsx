@@ -67,6 +67,8 @@ import { toast } from 'sonner'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { SourceInsightDialog } from '@/components/sources/SourceInsightDialog'
 import { NotebookAssociations } from '@/components/sources/NotebookAssociations'
+import { useCitationHighlightStore } from '@/lib/stores/citation-highlight-store'
+import { applyCitationHighlight, clearCitationHighlight } from '@/lib/utils/citation-highlight'
 
 interface SourceDetailContentProps {
   sourceId: string
@@ -123,6 +125,22 @@ function SourceDetailContentInner({
   const loadError = loadQueryError ? (isNotFoundError(loadQueryError) ? 'not-found' : 'error') : null
   const updateSource = useUpdateSource()
   const deleteSource = useDeleteSource()
+    // --- Citation highlight ---
+  const contentRef = useRef<HTMLDivElement | null>(null)
+  const pendingQuote = useCitationHighlightStore((s) => s.quote)
+  const clearQuote = useCitationHighlightStore((s) => s.clear)
+  const fullText = source?.full_text
+
+  useEffect(() => {
+    if (!pendingQuote || !fullText) return
+    const timer = window.setTimeout(() => {
+      if (contentRef.current) applyCitationHighlight(contentRef.current, pendingQuote)
+      clearQuote()
+    }, 150) // chờ markdown render xong
+    return () => window.clearTimeout(timer)
+  }, [pendingQuote, fullText, clearQuote])
+
+  useEffect(() => () => clearCitationHighlight(), [])
 
   // file_available comes from the source payload; downloads may flip it later,
   // so keep it as local state synced from the query data.
@@ -567,9 +585,11 @@ function SourceDetailContentInner({
                   )}
                 </div>
               )}
-              <MarkdownRenderer>
-                {source.full_text || t('sources.noContent')}
-              </MarkdownRenderer>
+              <div ref={contentRef}>
+                <MarkdownRenderer>
+                  {source.full_text || t('sources.noContent')}
+                </MarkdownRenderer>
+              </div>
             </section>
           </TabsContent>
 
