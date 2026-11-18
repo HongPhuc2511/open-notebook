@@ -56,6 +56,7 @@ interface ChatPanelProps {
   notebookContextStats?: NotebookContextStats
   // Notebook ID for saving notes
   notebookId?: string
+  onCitationClick?: (type: string, id: string, quote?: string) => void
 }
 
 export function ChatPanel({
@@ -75,7 +76,8 @@ export function ChatPanel({
   title,
   contextType = 'source',
   notebookContextStats,
-  notebookId
+  notebookId,
+  onCitationClick
 }: ChatPanelProps) {
   const { t } = useTranslation()
   const [sessionManagerOpen, setSessionManagerOpen] = useState(false)
@@ -86,18 +88,22 @@ export function ChatPanel({
   // Stable reference-click handler so memoized messages don't re-render on
   // composer keystrokes (which no longer re-render this component at all, since
   // the input state lives in the ChatComposer child).
-  const handleReferenceClick = useCallback((type: string, id: string) => {
+    const handleReferenceClick = useCallback((type: string, id: string, quote?: string) => {
+    if (onCitationClick) {
+      onCitationClick(type, id, quote)
+      return
+    }
     const modalType = type === 'source_insight' ? 'insight' : type as 'source' | 'note' | 'insight'
 
     try {
+      if (quote && type === 'source') {
+        useCitationHighlightStore.getState().setQuote(quote)
+      }
       openModal(modalType, id)
-      // Note: The modal system uses URL parameters and doesn't throw errors for missing items.
-      // The modal component itself will handle displaying "not found" states.
-      // This try-catch is here for future enhancements or unexpected errors.
     } catch {
       toast.error(t('common.noResults'))
     }
-  }, [openModal, t])
+  }, [openModal, onCitationClick, t])
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -385,7 +391,7 @@ function AIMessageContent({
   onReferenceClick
 }: {
   content: string
-  onReferenceClick: (type: string, id: string) => void
+  onReferenceClick: (type: string, id: string, quote?: string) => void
 }) {
   const { t } = useTranslation()
   const setQuote = useCitationHighlightStore((s) => s.setQuote)
@@ -402,16 +408,15 @@ function AIMessageContent({
 
   // useMemo để component không bị tạo lại mỗi lần render, nếu không popover đang mở sẽ tự đóng khi stream.
   const LinkComponent = useMemo(() => {
-    const fallback = createCompactReferenceLinkComponent(onReferenceClick)
+    const fallback = createCompactReferenceLinkComponent(
+      (type, id) => onReferenceClick(type, id)
+    )
     return createCitationLinkComponent(
       citations,
-      (c) => {
-        setQuote(c.type === 'source' ? c.quote : null) // chỉ nguồn gốc mới có full_text để highlight
-        onReferenceClick(c.type, c.id)
-      },
+      (c) => onReferenceClick(c.type, c.id, c.quote),
       fallback
     )
-  }, [citations, onReferenceClick, setQuote])
+  }, [citations, onReferenceClick])
 
   return (
     <MarkdownRenderer components={{ a: LinkComponent }}>

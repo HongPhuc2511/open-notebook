@@ -130,9 +130,11 @@ function SourceDetailContentInner({
   const pendingQuote = useCitationHighlightStore((s) => s.quote)
   const clearQuote = useCitationHighlightStore((s) => s.clear)
   const fullText = source?.full_text
+  const [activeTab, setActiveTab] = useState('content')
 
   useEffect(() => {
     if (!pendingQuote || !fullText) return
+    setActiveTab('content')
     const timer = window.setTimeout(() => {
       if (contentRef.current) applyCitationHighlight(contentRef.current, pendingQuote)
       clearQuote()
@@ -147,6 +149,11 @@ function SourceDetailContentInner({
   useEffect(() => {
     setFileAvailable(typeof source?.file_available === 'boolean' ? source.file_available : null)
   }, [source?.file_available])
+
+  const markdownContent = useMemo(
+    () => <MarkdownRenderer>{source?.full_text || t('sources.noContent')}</MarkdownRenderer>,
+    [source?.full_text, t]
+  )
 
   const fetchInsights = useCallback(async () => {
     try {
@@ -535,7 +542,7 @@ function SourceDetailContentInner({
 
       {/* Tabs Content */}
       <div className="flex-1 overflow-y-auto">
-        <Tabs defaultValue="content" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="w-full sticky top-0 z-10 bg-card">
             <TabsTrigger value="content">{t('sources.content')}</TabsTrigger>
             <TabsTrigger value="insights">
@@ -544,7 +551,7 @@ function SourceDetailContentInner({
             <TabsTrigger value="details">{t('sources.details')}</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="content" className="mt-5">
+          <TabsContent value="content" forceMount className="mt-5 data-[state=inactive]:hidden">
             <section>
               {externalHref && !isYouTubeUrl && (
                 <p className="mb-4 flex items-center gap-2 text-xs text-muted-foreground">
@@ -585,11 +592,7 @@ function SourceDetailContentInner({
                   )}
                 </div>
               )}
-              <div ref={contentRef}>
-                <MarkdownRenderer>
-                  {source.full_text || t('sources.noContent')}
-                </MarkdownRenderer>
-              </div>
+              <div ref={contentRef}>{markdownContent}</div>
             </section>
           </TabsContent>
 

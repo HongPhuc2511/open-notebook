@@ -1,19 +1,18 @@
 const NAME = 'citation'
 const KEEP = /[\p{L}\p{N}\p{M}]/u
 
+type HighlightRegistry = Map<string, unknown>
+const getRegistry = (): HighlightRegistry | undefined =>
+  (CSS as unknown as { highlights?: HighlightRegistry }).highlights
+
 function ensureHighlightStyle() {
   if (typeof document === 'undefined') return
   if (document.getElementById('citation-highlight-style')) return
   const style = document.createElement('style')
   style.id = 'citation-highlight-style'
-  style.textContent =
-    '::highlight(citation){background-color:rgba(250,204,21,0.55);color:inherit;}'
+  style.textContent = '::highlight(citation){background-color:rgba(250,204,21,0.55);color:inherit;}'
   document.head.appendChild(style)
 }
-
-type HighlightRegistry = Map<string, unknown>
-const getRegistry = (): HighlightRegistry | undefined =>
-  (CSS as unknown as { highlights?: HighlightRegistry }).highlights
 
 function normalizeQuote(s: string): string {
   let out = ''
@@ -23,14 +22,33 @@ function normalizeQuote(s: string): string {
   return out
 }
 
-/** Gom toàn bộ text node thành một chuỗi chỉ gồm chữ/số, kèm bản đồ vị trí. */
-function buildIndex(root: HTMLElement) {
+interface Index {
+  sig: number
+  text: string
+  nodes: Text[]
+  nodeOf: number[]
+  startOf: number[]
+  lenOf: number[]
+}
+const cache = new WeakMap<HTMLElement, Index>()
+
+function buildIndex(root: HTMLElement): Index {
+  const sig = (root.textContent || '').length
+  const hit = cache.get(root)
+  if (hit && hit.sig === sig) return hit
+
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
-  const map: { node: Text; start: number; len: number }[] = []
-  let text = ''
+  const nodes: Text[] = []
+  const nodeOf: number[] = []
+  const startOf: number[] = []
+  const lenOf: number[] = []
+  const parts: string[] = []
+
   let current: Node | null
   while ((current = walker.nextNode())) {
     const node = current as Text
+    const ni = nodes.length
+    nodes.push(node)
     const data = node.data
     let i = 0
     while (i < data.length) {
@@ -39,43 +57,46 @@ function buildIndex(root: HTMLElement) {
       const ch = data.substr(i, len)
       if (KEEP.test(ch)) {
         const lower = ch.toLowerCase()
-        for (let k = 0; k < lower.length; k++) map.push({ node, start: i, len })
-        text += lower
+        for (let k = 0; k < lower.length; k++) {
+          nodeOf.push(ni)
+          startOf.push(i)
+          lenOf.push(len)
+        }
+        parts.push(lower)
       }
       i += len
     }
   }
-  return { text, map }
+
+  const index: Index = { sig, text: parts.join(''), nodes, nodeOf, startOf, lenOf }
+  cache.set(root, index)
+  return index
 }
 
 export function clearCitationHighlight() {
   getRegistry()?.delete(NAME)
 }
 
-/** Tô sáng đoạn trích trong root và cuộn tới đó. Trả về true nếu tìm thấy. */
 export function applyCitationHighlight(root: HTMLElement, quote: string): boolean {
   clearCitationHighlight()
   ensureHighlightStyle()
   const target = normalizeQuote(quote)
   if (target.length < 8) return false
 
-  const { text, map } = buildIndex(root)
-  let start = text.indexOf(target)
+  const idx = buildIndex(root)
+  let start = idx.text.indexOf(target)
   if (start === -1) {
-    // Model chép lệch vài chữ: neo theo 40 ký tự đầu
-    start = text.indexOf(target.slice(0, 40))
+    start = idx.text.indexOf(target.slice(0, 40))
     if (start === -1) return false
   }
-  const end = Math.min(start + target.length, map.length) - 1
-  const a = map[start]
-  const b = map[end]
+  const end = Math.min(start + target.length, idx.nodeOf.length) - 1
 
   const range = document.createRange()
-  range.setStart(a.node, a.start)
-  range.setEnd(b.node, b.start + b.len)
+  range.setStart(idx.nodes[idx.nodeOf[start]], idx.startOf[start])
+  range.setEnd(idx.nodes[idx.nodeOf[end]], idx.startOf[end] + idx.lenOf[end])
 
   const Ctor = (window as unknown as { Highlight?: new (r: Range) => unknown }).Highlight
   getRegistry()?.set(NAME, Ctor ? new Ctor(range) : undefined)
-  a.node.parentElement?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  idx.nodes[idx.nodeOf[start]].parentElement?.scrollIntoView({ behavior: 'auto', block: 'center' })
   return true
 }

@@ -3,7 +3,7 @@ import sqlite3
 from typing import Annotated, Optional
 
 from ai_prompter import Prompter
-from langchain_core.messages import SystemMessage
+from langchain_core.messages import AIMessage,SystemMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, START, StateGraph
@@ -22,6 +22,7 @@ from open_notebook.utils.citation_context import (
     build_numbered_context,
     strip_citations_block,
 )
+from open_notebook.utils.topic_guard import check_message
 
 
 class ThreadState(TypedDict):
@@ -34,12 +35,17 @@ class ThreadState(TypedDict):
 
 def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict:
     try:
+        last_user = next(
+            (m for m in reversed(state.get("messages", [])) if getattr(m, "type", None) == "human"),
+            None,
+        )
+        if last_user is not None:
+            refusal = check_message(extract_text_content(last_user.content))
+            if refusal:
+                return {"messages": AIMessage(content=refusal)}
         numbered_context, citation_registry = build_numbered_context(
             state.get("context")
         )
-        print("CITE_DEBUG ctx_type:", type(state.get("context")).__name__, flush=True)
-        print("CITE_DEBUG registry:", list(citation_registry.items())[:3], flush=True)
-        print("CITE_DEBUG numbered:", numbered_context[:600], flush=True)
         prompt_data = dict(state)
         prompt_data["context"] = numbered_context
         system_prompt = Prompter(prompt_template="chat/system").render(data=prompt_data)  # type: ignore[arg-type]
