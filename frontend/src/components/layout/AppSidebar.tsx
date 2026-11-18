@@ -27,8 +27,6 @@ import type { TFunction } from 'i18next'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import {
   Book,
-  LayoutDashboard,
-  Library,
   Search,
   Mic,
   Bot,
@@ -45,27 +43,31 @@ import {
 
 const getNavigation = (t: TFunction) => [
   {
-    title: 'TỔNG QUAN',
+    title: t('navigation.collect'),
     items: [
-      { name: 'Tổng quan', href: '/', icon: LayoutDashboard, iconClass: 'text-blue-600' },
-      { name: t('navigation.notebooks'), href: '/notebooks', icon: Book, iconClass: 'text-violet-600' },
-      { name: t('navigation.askAndSearch'), href: '/search', icon: Search, iconClass: 'text-cyan-600' },
-      { name: 'Thư viện nguồn', href: '/sources', icon: Library, iconClass: 'text-emerald-600' },
+      { name: t('navigation.sources'), href: '/sources', icon: FileText, iconClass: 'text-sage' },
     ],
   },
   {
-    title: 'CÔNG CỤ LÀM VIỆC',
+    title: t('navigation.process'),
     items: [
-      { name: t('navigation.podcasts'), href: '/podcasts', icon: Mic, iconClass: 'text-fuchsia-600' },
-      { name: t('navigation.transformations'), href: '/transformations', icon: Shuffle, iconClass: 'text-orange-600' },
-      { name: t('navigation.models'), href: '/settings/models', icon: Bot, iconClass: 'text-indigo-600' },
-      { name: t('navigation.advanced'), href: '/advanced', icon: Wrench, iconClass: 'text-teal-600' },
+      { name: t('navigation.notebooks'), href: '/notebooks', icon: Book, iconClass: 'text-teal' },
+      { name: t('navigation.askAndSearch'), href: '/search', icon: Search, iconClass: undefined },
     ],
   },
   {
-    title: 'HỆ THỐNG',
+    title: t('navigation.create'),
     items: [
-      { name: t('navigation.settings'), href: '/settings', icon: Settings, iconClass: 'text-slate-500' },
+      { name: t('navigation.podcasts'), href: '/podcasts', icon: Mic, iconClass: 'text-mauve' },
+    ],
+  },
+  {
+    title: t('navigation.manage'),
+    items: [
+      { name: t('navigation.models'), href: '/settings/models', icon: Bot, iconClass: undefined },
+      { name: t('navigation.transformations'), href: '/transformations', icon: Shuffle, iconClass: undefined },
+      { name: t('navigation.settings'), href: '/settings', icon: Settings, iconClass: undefined },
+      { name: t('navigation.advanced'), href: '/advanced', icon: Wrench, iconClass: undefined },
     ],
   },
 ] as const
@@ -173,19 +175,6 @@ export function AppSidebar() {
             isCollapsed ? 'px-2' : 'px-3'
           )}
         >
-          {!isCollapsed && (
-            <div className="px-1 pb-2">
-              <Button
-                variant="tonal"
-                size="sm"
-                className="w-full justify-start gap-2 rounded-xl font-semibold workspace-write-note"
-                onClick={() => window.dispatchEvent(new Event('open-notebook-note-editor'))}
-              >
-                <Plus className="h-4 w-4" />
-                Write Note
-              </Button>
-            </div>
-          )}
           <div
             className={cn(
               'mb-4',
@@ -266,7 +255,7 @@ export function AppSidebar() {
           {navigation.map((section, index) => (
             <div key={section.title} className={index > 0 ? 'pt-4' : undefined}>
               <div className="space-y-1">
-                <h3 className="sidebar-section-label">{section.title}</h3>
+                <h3 className="sr-only">{section.title}</h3>
 
                 {section.items.map((item) => {
                   const isActive = item.href === activeHref

@@ -1,6 +1,6 @@
-﻿'use client'
+'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { NoteResponse } from '@/lib/types/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -48,16 +48,6 @@ export function NotesColumn({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null)
 
-  useEffect(() => {
-    const openNoteEditor = () => {
-      setEditingNote(undefined)
-      setEditorOpen(true)
-    }
-
-    window.addEventListener('open-notebook-note-editor', openNoteEditor)
-    return () => window.removeEventListener('open-notebook-note-editor', openNoteEditor)
-  }, [])
-
   const deleteNote = useDeleteNote()
 
   // Collapsible column state
@@ -98,10 +88,10 @@ export function NotesColumn({
         collapsedIcon={StickyNote}
         collapsedLabel={notesLabel}
       >
-        <Card className="h-full flex flex-col flex-1 gap-0 overflow-hidden rounded-2xl border border-border/70 bg-background py-0 shadow-sm">
-          <CardHeader className="flex-shrink-0 px-4 pb-3 pt-4">
+        <Card className="h-full flex flex-col flex-1 gap-3 overflow-hidden rounded-2xl bg-popover py-5">
+          <CardHeader className="pb-3 flex-shrink-0">
             <div className="flex items-center justify-between gap-2">
-              <CardTitle className="flex items-center gap-2 text-base font-semibold tracking-tight text-foreground">
+              <CardTitle className="flex items-center gap-2 text-lg font-normal text-foreground">
                 {t('notebooks.studioTitle')}
               </CardTitle>
               <div className="flex shrink-0 items-center gap-1">
@@ -123,13 +113,16 @@ export function NotesColumn({
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
-
+                <Button size="sm" variant="tonal" className="rounded-full" aria-label={t('common.writeNote')} onClick={() => handleOpenEditor()}>
+                  <Plus className="h-4 w-4 @[18rem]/card-header:mr-2" />
+                  <span className="hidden @[18rem]/card-header:inline">{t('common.writeNote')}</span>
+                </Button>
                 {collapseButton}
               </div>
             </div>
           </CardHeader>
 
-          <CardContent className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
+          <CardContent className="flex-1 overflow-y-auto min-h-0">
             {isLoading ? (
               <div className="flex items-center justify-center py-8">
                 <LoadingSpinner />
@@ -145,26 +138,26 @@ export function NotesColumn({
                 {notes.map((note) => (
                   <div
                     key={note.id}
-                    className="group relative flex cursor-pointer items-center gap-2.5 rounded-xl border border-transparent px-2.5 py-2 transition-all hover:border-border/70 hover:bg-muted/60"
+                    className="group relative flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-muted"
                     onClick={() => handleOpenEditor(note)}
                   >
                     {/* Type icon in a soft square, like Studio items in NotebookLM */}
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted/80 transition-colors group-hover:bg-background">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted group-hover:bg-background">
                       {note.note_type === 'ai' ? (
-                        <Bot className="h-4 w-4 text-teal" />
+                        <Bot className="h-5 w-5 text-teal" />
                       ) : (
-                        <User className="h-4 w-4 text-muted-foreground" />
+                        <User className="h-5 w-5 text-muted-foreground" />
                       )}
                     </div>
 
                     {/* Title (falls back to the content when the note has no title) + subtitle */}
                     <div className="min-w-0 flex-1">
-                      <h4 className="truncate text-[13px] font-medium text-foreground">
+                      <h4 className="truncate text-sm font-medium">
                         {note.title || note.content || t('sources.untitledNote')}
                       </h4>
-                      <p className="truncate text-[11px] text-muted-foreground">
+                      <p className="truncate text-xs text-muted-foreground">
                         {note.note_type === 'ai' ? t('common.aiGenerated') : t('common.human')}
-                        {' Â· '}
+                        {' · '}
                         {formatDistanceToNow(new Date(note.updated), {
                           addSuffix: true,
                           locale: getDateLocale(language)
@@ -240,5 +233,3 @@ export function NotesColumn({
     </>
   )
 }
-
-
