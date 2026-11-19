@@ -5,9 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { Bot, User, Send, Loader2, FileText, Lightbulb, StickyNote, History } from 'lucide-react'
+import { Bot, User, Send, Loader2, FileText, StickyNote, History } from 'lucide-react'
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
 import {
   SourceChatMessage,
@@ -22,7 +21,7 @@ import { convertReferencesToCompactMarkdown, createCompactReferenceLinkComponent
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
 import { toast } from 'sonner'
 import { useTranslation } from '@/lib/hooks/use-translation'
-import { extractCitations, linkifyCitations } from '@/lib/utils/citations'
+import { extractCitations, linkifyCitations, resolveRawReferences } from '@/lib/utils/citations'
 import { createCitationLinkComponent } from '@/components/sources/CitationLink'
 import { useCitationHighlightStore } from '@/lib/stores/citation-highlight-store'
 
@@ -145,7 +144,11 @@ export function ChatPanel({
   ) : null
 
   // Số nguồn/ghi chú gọn trong pill, token/ký tự nằm trong tooltip
-  const contextChip = notebookContextStats ? <ContextChip stats={notebookContextStats} /> : null
+  const contextChip = notebookContextStats ? (
+    <ContextChip stats={notebookContextStats} />
+  ) : contextIndicators ? (
+    <IndicatorsChip indicators={contextIndicators} />
+  ) : null
 
   return (
     <>
@@ -189,32 +192,6 @@ export function ChatPanel({
             <div ref={messagesEndRef} />
           </div>
         </ScrollArea>
-
-        {/* Context Indicators */}
-        {contextIndicators && (
-          <div className="border-t px-4 py-2">
-            <div className="flex flex-wrap gap-2 text-xs">
-              {contextIndicators.sources?.length > 0 && (
-                <Badge variant="outline" className="gap-1">
-                  <FileText className="h-3 w-3" />
-                  {contextIndicators.sources.length} {t('navigation.sources')}
-                </Badge>
-              )}
-              {contextIndicators.insights?.length > 0 && (
-                <Badge variant="outline" className="gap-1">
-                  <Lightbulb className="h-3 w-3" />
-                  {contextIndicators.insights.length} {contextIndicators.insights.length === 1 ? t('common.insight') : t('common.insights')}
-                </Badge>
-              )}
-              {contextIndicators.notes?.length > 0 && (
-                <Badge variant="outline" className="gap-1">
-                  <StickyNote className="h-3 w-3" />
-                  {contextIndicators.notes.length} {contextIndicators.notes.length === 1 ? t('common.note') : t('common.notes')}
-                </Badge>
-              )}
-            </div>
-          </div>
-        )}
 
         {/* Input Area */}
         <ChatComposer
@@ -403,7 +380,15 @@ function AIMessageContent({
   const { t } = useTranslation()
   const setQuote = useCitationHighlightStore((s) => s.setQuote)
 
-  const { text, citations } = useMemo(() => extractCitations(content), [content])
+  const extracted = useMemo(() => extractCitations(content), [content])
+  // Có khối <citations> nhưng model vẫn viết [source:id] trong văn bản -> đổi về số để hiện badge
+  const { text, citations } = useMemo(
+    () =>
+      extracted.citations.length > 0
+        ? resolveRawReferences(extracted.text, extracted.citations)
+        : extracted,
+    [extracted]
+  )
 
   const markdown = useMemo(
     () =>
@@ -449,7 +434,7 @@ function ContextChip({ stats }: { stats: NotebookContextStats }) {
     <Tooltip>
       <TooltipTrigger asChild>
         <span className="cursor-default whitespace-nowrap px-1 text-xs text-muted-foreground/70">
-          {total} {t('navigation.sources').toLowerCase()}
+          {total} {(total === 1 ? t('common.source') : t('navigation.sources')).toLowerCase()}
         </span>
       </TooltipTrigger>
       <TooltipContent side="top">
@@ -477,5 +462,31 @@ function ContextChip({ stats }: { stats: NotebookContextStats }) {
         )}
       </TooltipContent>
     </Tooltip>
+  )
+}
+
+// Trang chi tiết nguồn: nhãn gọn "1 source · 1 insight" trong pill thay cho các badge phía trên ô nhập
+function IndicatorsChip({ indicators }: { indicators: SourceChatContextIndicator }) {
+  const { t } = useTranslation()
+  const sources = indicators.sources?.length ?? 0
+  const insights = indicators.insights?.length ?? 0
+  const notes = indicators.notes?.length ?? 0
+
+  const parts: string[] = []
+  if (sources > 0) {
+    parts.push(sources + ' ' + (sources === 1 ? t('common.source') : t('navigation.sources')).toLowerCase())
+  }
+  if (insights > 0) {
+    parts.push(insights + ' ' + (insights === 1 ? t('common.insight') : t('common.insights')).toLowerCase())
+  }
+  if (notes > 0) {
+    parts.push(notes + ' ' + (notes === 1 ? t('common.note') : t('common.notes')).toLowerCase())
+  }
+  if (parts.length === 0) return null
+
+  return (
+    <span className="whitespace-nowrap px-1 text-xs text-muted-foreground/70">
+      {parts.join(' · ')}
+    </span>
   )
 }

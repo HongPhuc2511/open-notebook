@@ -33,9 +33,11 @@ export function createCitationLinkComponent(
           </button>
         </PopoverTrigger>
         <PopoverContent className="w-80 space-y-2 text-sm" align="start">
-          <blockquote className="border-l-2 border-primary/50 pl-2 italic text-muted-foreground">
-            {citation.quote}
-          </blockquote>
+          {citation.quote && (
+            <blockquote className="border-l-2 border-primary/50 pl-2 italic text-muted-foreground">
+              {citation.quote}
+            </blockquote>
+          )}
           <button
             type="button"
             onClick={() => onOpenSource(citation)}
