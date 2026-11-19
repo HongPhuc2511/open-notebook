@@ -114,7 +114,7 @@ export function AppTopBar({ actions, title }: AppTopBarProps) {
     <header
       className={cn(
         'flex shrink-0 items-center gap-2 bg-background px-3 sm:px-6',
-        title ? 'h-14' : 'h-16'
+        'h-12 sm:h-14'
       )}
     >
       {/* Small screens: all main tabs collapse into one menu */}
@@ -166,7 +166,7 @@ export function AppTopBar({ actions, title }: AppTopBarProps) {
               href={tab.href}
               aria-current={active ? 'page' : undefined}
               className={cn(
-                'whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors',
+                'whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
                 active
                   ? 'bg-sidebar-accent text-sidebar-accent-foreground'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'
@@ -188,7 +188,7 @@ export function AppTopBar({ actions, title }: AppTopBarProps) {
       {/* Global create menu, same targets as the old sidebar button */}
       <DropdownMenu open={createOpen} onOpenChange={setCreateOpen}>
         <DropdownMenuTrigger asChild>
-          <Button variant="tonal" className="shrink-0 rounded-full">
+          <Button variant="tonal" className="h-9 shrink-0 rounded-full">
             <Plus className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">{t('common.create')}</span>
           </Button>
@@ -233,7 +233,7 @@ export function AppTopBar({ actions, title }: AppTopBarProps) {
           <Button
             variant="ghost"
             size="icon"
-            className="size-10 rounded-full bg-muted"
+            className="size-8 rounded-full bg-muted sm:size-9"
             aria-label={t('navigation.settings')}
           >
             <User className="h-5 w-5" />

@@ -30,6 +30,7 @@ import type { TFunction } from 'i18next'
 import { cn } from '@/lib/utils'
 import { ContextMode } from '@/app/(dashboard)/notebooks/[id]/page'
 import { Checkbox } from '@/components/ui/checkbox'
+import { SourceFavicon, getUploadIcon } from './SourceFavicon'
 
 interface SourceCardProps {
   source: SourceListResponse
@@ -181,7 +182,8 @@ function SourceCardImpl({
   const statusConfig = statusConfigMap[currentStatus] || statusConfigMap.completed
   const StatusIcon = statusConfig.icon
   const sourceType = getSourceType(source)
-  const SourceTypeIcon = SOURCE_TYPE_ICONS[sourceType]
+  const SourceTypeIcon =
+    sourceType === 'upload' ? getUploadIcon(source.asset?.file_path) : SOURCE_TYPE_ICONS[sourceType]
   
    const title = source.title || t('sources.untitledSource')
 
@@ -229,7 +231,11 @@ function SourceCardImpl({
     >
       <CardContent className="px-3 py-2">
         <div className="flex items-center gap-3">
-          <SourceTypeIcon className="h-5 w-5 shrink-0 text-muted-foreground" />
+          {sourceType === 'link' && source.asset?.url ? (
+            <SourceFavicon url={source.asset.url} className="h-5 w-5 shrink-0" />
+          ) : (
+            <SourceTypeIcon className="h-5 w-5 shrink-0 text-muted-foreground" />
+          )}
 
           <div className="min-w-0 flex-1">
             <h4 className="truncate text-sm leading-tight" title={title}>

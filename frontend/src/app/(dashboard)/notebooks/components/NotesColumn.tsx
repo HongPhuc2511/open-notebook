@@ -54,7 +54,7 @@ export function NotesColumn({
   const { notesCollapsed, toggleNotes } = useNotebookColumnsStore()
   const notesLabel = t('common.notes')
   const collapseButton = useMemo(
-    () => createCollapseButton(toggleNotes, notesLabel),
+    () => createCollapseButton(toggleNotes, notesLabel, 'right'),
     [toggleNotes, notesLabel]
   )
 
