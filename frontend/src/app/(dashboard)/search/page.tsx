@@ -14,7 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { Search, ChevronDown, AlertCircle, Settings, Save, MessageCircleQuestion } from 'lucide-react'
+import { Search, ChevronDown, AlertCircle, Settings, Save, Sparkles, MessageCircleQuestion } from 'lucide-react'
 import { useSearch } from '@/lib/hooks/use-search'
 import { useAsk } from '@/lib/hooks/use-ask'
 import { useModelDefaults, useModels } from '@/lib/hooks/use-models'
@@ -184,20 +184,33 @@ export default function SearchPage() {
     }
   }, [searchParams])
 
+
+  // Gom 3 giai đoạn (strategy / answer / final) thành một nhãn model duy nhất
+  const askModelIds = [
+    customModels?.strategy || modelDefaults?.default_chat_model,
+    customModels?.answer || modelDefaults?.default_chat_model,
+    customModels?.finalAnswer || modelDefaults?.default_chat_model,
+  ]
+  const askModelsSame = askModelIds.every((id) => id === askModelIds[0])
+  const askModelLabel = askModelsSame
+    ? t('common.model') + ': ' + resolveModelName(askModelIds[0])
+    : t('searchPage.usingCustomModels')
+
   return (
     <AppShell>
-      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col overflow-y-auto px-4 py-6 md:px-8 md:py-8">
+      <div className="flex-1 overflow-y-auto">
+      <div className="mx-auto flex w-full max-w-4xl flex-col px-4 pb-12 pt-8 md:px-8">
         <h1 className="mb-3 font-display text-2xl font-semibold tracking-tight md:mb-5 md:text-3xl">{t('searchPage.askAndSearch')}</h1>
 
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'ask' | 'search')} className="w-full space-y-7">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'ask' | 'search')} className="w-full space-y-4">
           <div className="space-y-3">
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{t('searchPage.chooseAMode')}</p>
-            <TabsList aria-label={t('common.accessibility.searchKB')} className="inline-flex h-auto w-fit max-w-full flex-wrap gap-1 rounded-full bg-muted/70 p-1">
-              <TabsTrigger value="ask" className="gap-2 rounded-full px-5 py-2.5 text-sm data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+            <TabsList aria-label={t('common.accessibility.searchKB')} className="inline-flex h-auto w-fit max-w-full gap-1 rounded-full bg-muted/70 p-1">
+              <TabsTrigger value="ask" className="gap-2 whitespace-nowrap rounded-full px-4 py-1.5 text-sm data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
                 <MessageCircleQuestion className="h-4 w-4" />
                 {t('searchPage.askBeta')}
               </TabsTrigger>
-              <TabsTrigger value="search" className="gap-2 rounded-full px-5 py-2.5 text-sm data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+              <TabsTrigger value="search" className="gap-2 whitespace-nowrap rounded-full px-4 py-1.5 text-sm data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
                 <Search className="h-4 w-4" />
                 {t('searchPage.search')}
               </TabsTrigger>
@@ -206,13 +219,13 @@ export default function SearchPage() {
 
           <TabsContent value="ask" className="mt-5 focus-visible:outline-none">
             <Card className="rounded-3xl border-border/70 shadow-sm">
-              <CardHeader className="space-y-2 px-5 pt-6 md:px-7 md:pt-7">
+              <CardHeader className="space-y-1.5 px-5 pt-5 md:px-6 md:pt-5">
                 <CardTitle className="text-xl font-semibold tracking-tight">{t('searchPage.askYourKb')}</CardTitle>
                 <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
                   {t('searchPage.askYourKbDesc')}
                 </p>
               </CardHeader>
-              <CardContent className="space-y-5 px-5 pb-6 md:px-7 md:pb-7">
+              <CardContent className="space-y-4 px-5 pb-5 md:px-6 md:pb-5">
                 {/* Question Input */}
                 <div className="space-y-2">
                   <Label htmlFor="ask-question" className="text-sm font-medium">{t('searchPage.question')}</Label>
@@ -232,13 +245,13 @@ export default function SearchPage() {
                     disabled={ask.isStreaming}
                     rows={3}
                     aria-label={t('common.accessibility.enterQuestion')}
-                    className="min-h-32 resize-y rounded-2xl border-border/70 bg-background px-4 py-3 text-sm leading-6 shadow-none transition-colors focus-visible:ring-2 focus-visible:ring-primary/20"
+                    className="min-h-24 resize-y rounded-2xl border-border/70 bg-background px-4 py-3 text-sm leading-6 shadow-none transition-colors focus-visible:ring-2 focus-visible:ring-primary/20"
                   />
                   <p className="text-xs text-muted-foreground">{t('searchPage.pressToSubmit')}</p>
                 </div>
 
                 {/* Notebook scope */}
-                <div className="rounded-2xl border border-border/60 bg-muted/20 px-4 py-3">
+                <div className="rounded-2xl bg-muted/40 px-4 py-3">
                   <NotebookScopeSelector
                     selectedIds={scopeNotebookIds}
                     onChange={setScopeNotebookIds}
@@ -254,61 +267,58 @@ export default function SearchPage() {
                   </div>
                 ) : (
                   <>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-xs text-muted-foreground">
-                          {customModels ? t('searchPage.usingCustomModels') : t('searchPage.usingDefaultModels')}
-                        </Label>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      {/* Trái: một nhãn model duy nhất + Advanced (chi tiết 3 giai đoạn nằm trong dialog) */}
+                      <div className="flex min-w-0 items-center gap-1">
+                        <Badge
+                          variant="secondary"
+                          className="max-w-full truncate font-mono text-[11px]"
+                          title={askModelLabel}
+                        >
+                          {askModelLabel}
+                        </Badge>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => setShowAdvancedModels(true)}
                           disabled={ask.isStreaming}
-                          className="h-auto py-1 px-2"
+                          className="h-7 gap-1 px-2 text-xs text-muted-foreground"
                         >
-                          <Settings className="h-3 w-3 mr-1" />
+                          <Settings className="h-3.5 w-3.5" />
                           {t('searchPage.advanced')}
                         </Button>
                       </div>
-                      <div className="flex gap-2 text-xs flex-wrap">
-                        <Badge variant="secondary" className="font-mono text-[11px]">
-                          {t('searchPage.strategy')}: {resolveModelName(customModels?.strategy || modelDefaults?.default_chat_model)}
-                        </Badge>
-                        <Badge variant="secondary" className="font-mono text-[11px]">
-                          {t('searchPage.answer')}: {resolveModelName(customModels?.answer || modelDefaults?.default_chat_model)}
-                        </Badge>
-                        <Badge variant="secondary" className="font-mono text-[11px]">
-                          {t('searchPage.final')}: {resolveModelName(customModels?.finalAnswer || modelDefaults?.default_chat_model)}
-                        </Badge>
-                      </div>
-                    </div>
 
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <Button
-                        onClick={handleAsk}
-                        disabled={ask.isStreaming || !askQuestion.trim()}
-                        className="h-11 w-full rounded-full px-6 sm:w-auto"
-                      >
-                        {ask.isStreaming ? (
-                          <>
-                            <LoadingSpinner size="sm" className="mr-2" />
-                            {t('searchPage.processing')}
-                          </>
-                        ) : (
-                          t('searchPage.ask')
+                      {/* Phải: nút hành động */}
+                      <div className="flex shrink-0 items-center gap-2">
+                        {ask.finalAnswer && (
+                          <Button
+                            variant="outline"
+                            onClick={() => setShowSaveDialog(true)}
+                            className="h-10 rounded-full px-5"
+                          >
+                            <Save className="h-4 w-4 mr-2" />
+                            {t('searchPage.saveToNotebooks')}
+                          </Button>
                         )}
-                      </Button>
-
-                      {ask.finalAnswer && (
                         <Button
-                          variant="outline"
-                          onClick={() => setShowSaveDialog(true)}
-                          className="h-11 w-full rounded-full px-6 sm:w-auto"
+                          onClick={handleAsk}
+                          disabled={ask.isStreaming || !askQuestion.trim()}
+                          className="h-10 rounded-full px-6"
                         >
-                          <Save className="h-4 w-4 mr-2" />
-                          {t('searchPage.saveToNotebooks')}
+                          {ask.isStreaming ? (
+                            <>
+                              <LoadingSpinner size="sm" className="mr-2" />
+                              {t('searchPage.processing')}
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="mr-2 h-4 w-4" />
+                              {t('searchPage.ask')}
+                            </>
+                          )}
                         </Button>
-                      )}
+                      </div>
                     </div>
                   </>
                 )}
@@ -396,9 +406,9 @@ export default function SearchPage() {
                 </div>
 
                 {/* Search Options */}
-                <div className="grid gap-4 rounded-2xl border border-border/60 bg-muted/20 p-4 md:grid-cols-2 md:gap-5 md:p-5">
+                <div className="grid gap-3 md:grid-cols-2">
                   {/* Notebook scope */}
-                  <div className="rounded-xl border border-border/50 bg-background/70 px-4 py-3 md:col-span-2">
+                  <div className="rounded-2xl bg-muted/40 px-4 py-3 md:col-span-2">
                     <NotebookScopeSelector
                       selectedIds={scopeNotebookIds}
                       onChange={setScopeNotebookIds}
@@ -407,7 +417,7 @@ export default function SearchPage() {
                   </div>
 
                   {/* Search Type */}
-                  <div className="space-y-3 rounded-xl bg-background/70 p-4" role="group" aria-labelledby="search-type-label">
+                  <div className="space-y-3 rounded-2xl bg-muted/40 p-4" role="group" aria-labelledby="search-type-label">
                     <span id="search-type-label" className="text-sm font-semibold leading-none">{t('searchPage.searchType')}</span>
                     {!hasEmbeddingModel && (
                       <div className="flex items-center gap-2 text-sm text-warn">
@@ -444,7 +454,7 @@ export default function SearchPage() {
                   </div>
 
                   {/* Search Locations */}
-                  <div className="space-y-3 rounded-xl bg-background/70 p-4" role="group" aria-labelledby="search-in-label">
+                  <div className="space-y-3 rounded-2xl bg-muted/40 p-4" role="group" aria-labelledby="search-in-label">
                     <span id="search-in-label" className="text-sm font-semibold leading-none">{t('searchPage.searchIn')}</span>
                     <div className="space-y-2">
                       <div className="flex items-center space-x-2">
@@ -542,6 +552,7 @@ export default function SearchPage() {
             </Card>
           </TabsContent>
         </Tabs>
+      </div>
       </div>
     </AppShell>
   )
