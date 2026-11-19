@@ -55,3 +55,40 @@ export function linkifyCitations(text: string, citations: Citation[]): string {
     nums.has(Number(d)) ? `[${d}](#cite-${d})` : m
   )
 }
+
+const RAW_REF_GROUP =
+  /\[\s*((?:source_insight|insight|note|source):[A-Za-z0-9_]+(?:\s*,\s*(?:source_insight|insight|note|source):[A-Za-z0-9_]+)*)\s*\]/g
+
+/**
+ * Model đôi khi vẫn viết [source:abc] thay vì [n] dù đã có khối <citations>.
+ * Đổi các tham chiếu thô đó về số để hiện badge; id chưa có trong danh sách
+ * sẽ được thêm một citation không có trích đoạn.
+ */
+export function resolveRawReferences(
+  text: string,
+  citations: Citation[]
+): { text: string; citations: Citation[] } {
+  const list = [...citations]
+  let next = list.reduce((max, c) => Math.max(max, c.n), 0) + 1
+
+  const numberFor = (type: ReferenceType, id: string): number => {
+    const found = list.find((c) => c.type === type && c.id === id)
+    if (found) return found.n
+    const n = next++
+    list.push({ n, type, id, quote: '' })
+    return n
+  }
+
+  const out = text.replace(RAW_REF_GROUP, (_m, group: string) => {
+    const nums: number[] = []
+    for (const part of group.split(',')) {
+      const ref = parseRef(part)
+      if (!ref) continue
+      const n = numberFor(ref.type, ref.id)
+      if (!nums.includes(n)) nums.push(n)
+    }
+    return nums.map((n) => '[' + n + ']').join('')
+  })
+
+  return { text: out, citations: list }
+}

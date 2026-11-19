@@ -92,8 +92,8 @@ export default function SourceDetailPage() {
 
   return (
     <div className="flex flex-col h-screen bg-muted/40">
-      <div className="pt-6 pb-4 px-6">
-        <Button variant="ghost" size="sm" onClick={handleBack} className="mb-4">
+      <div className="flex items-center px-6 pb-2 pt-3">
+        <Button variant="ghost" size="sm" onClick={handleBack}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           {navigation.getReturnLabel()}
         </Button>
@@ -107,7 +107,7 @@ export default function SourceDetailPage() {
         />
 
         <div
-          className="min-w-0 overflow-y-auto rounded-2xl bg-popover px-6 py-4"
+          className="min-w-0 overflow-y-auto break-words rounded-2xl bg-popover px-6 py-4"
           style={{ width: `${leftPct}%` }}
         >
           <SourceDetailContent sourceId={sourceId} showChatButton={false} onClose={handleBack} />
