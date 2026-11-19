@@ -43,6 +43,8 @@
     "i18next-browser-languagedetector": "^8.2.1",
     "katex": "^0.16.47",
     "lucide-react": "^1.75.0",
+    "markmap-lib": "^0.18.13",
+    "markmap-view": "^0.18.13",
     "next": "^16.3.8",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",

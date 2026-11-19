@@ -10,7 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Plus, StickyNote, Bot, User, MoreVertical, Trash2, ListChecks, ChevronDown } from 'lucide-react'
+import { Plus, StickyNote, Bot, User, MoreVertical, Trash2, ListChecks, ChevronDown, Network } from 'lucide-react'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
 import { NoteEditorDialog } from './NoteEditorDialog'
@@ -24,6 +24,10 @@ import { CollapsibleColumn, createCollapseButton } from '@/components/notebooks/
 import { useNotebookColumnsStore } from '@/lib/stores/notebook-columns-store'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { Checkbox } from '@/components/ui/checkbox'
+import { toast } from 'sonner'
+import { MindMapDialog } from '@/components/notebooks/MindMapDialog'
+import { mindmapApi } from '@/lib/api/mindmap'
+import { useGenerateMindMap } from '@/lib/hooks/use-mindmap'
 
 interface NotesColumnProps {
   notes?: NoteResponse[]
@@ -50,6 +54,13 @@ export function NotesColumn({
 
   const deleteNote = useDeleteNote()
 
+  // Mind map (Studio)
+  const [mindMapOpen, setMindMapOpen] = useState(false)
+  const [mindMap, setMindMap] = useState<{ title?: string | null; markdown: string } | null>(null)
+  const generateMindMap = useGenerateMindMap()
+  const mindMapLabel = language?.startsWith('vi') ? 'Sơ đồ tư duy' : 'Mind map'
+  const isMindMap = (note: NoteResponse) => (note.note_type as string | undefined) === 'mindmap'
+
   // Collapsible column state
   const { notesCollapsed, toggleNotes } = useNotebookColumnsStore()
   const notesLabel = t('common.notes')
@@ -66,6 +77,30 @@ export function NotesColumn({
   const handleOpenEditor = (note?: NoteResponse) => {
     setEditingNote(note)
     setEditorOpen(true)
+  }
+
+  const handleGenerateMindMap = async () => {
+    try {
+      const note = await generateMindMap.mutateAsync({ notebookId })
+      setMindMap({ title: note.title, markdown: note.content ?? '' })
+      setMindMapOpen(true)
+    } catch {
+      // error toast is shown by the hook
+    }
+  }
+
+  const handleRowClick = async (note: NoteResponse) => {
+    if (!isMindMap(note)) {
+      handleOpenEditor(note)
+      return
+    }
+    try {
+      const full = await mindmapApi.get(note.id)
+      setMindMap({ title: full.title, markdown: full.content ?? '' })
+      setMindMapOpen(true)
+    } catch {
+      toast.error('Failed to open mind map')
+    }
   }
 
   const handleDeleteConfirm = async () => {
@@ -113,6 +148,18 @@ export function NotesColumn({
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
+                <Button
+                  size="sm"
+                  variant="tonal"
+                  className="rounded-full"
+                  aria-label={mindMapLabel}
+                  title={mindMapLabel}
+                  disabled={generateMindMap.isPending}
+                  onClick={handleGenerateMindMap}
+                >
+                  <Network className={generateMindMap.isPending ? 'h-4 w-4 animate-pulse @[18rem]/card-header:mr-2' : 'h-4 w-4 @[18rem]/card-header:mr-2'} />
+                  <span className="hidden @[18rem]/card-header:inline">{mindMapLabel}</span>
+                </Button>
                 <Button size="sm" variant="tonal" className="rounded-full" aria-label={t('common.writeNote')} onClick={() => handleOpenEditor()}>
                   <Plus className="h-4 w-4 @[18rem]/card-header:mr-2" />
                   <span className="hidden @[18rem]/card-header:inline">{t('common.writeNote')}</span>
@@ -139,11 +186,13 @@ export function NotesColumn({
                   <div
                     key={note.id}
                     className="group relative flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-muted"
-                    onClick={() => handleOpenEditor(note)}
+                    onClick={() => handleRowClick(note)}
                   >
                     {/* Type icon in a soft square, like Studio items in NotebookLM */}
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted group-hover:bg-background">
-                      {note.note_type === 'ai' ? (
+                      {isMindMap(note) ? (
+                        <Network className="h-5 w-5 text-teal" />
+                      ) : note.note_type === 'ai' ? (
                         <Bot className="h-5 w-5 text-teal" />
                       ) : (
                         <User className="h-5 w-5 text-muted-foreground" />
@@ -156,7 +205,7 @@ export function NotesColumn({
                         {note.title || note.content || t('sources.untitledNote')}
                       </h4>
                       <p className="truncate text-xs text-muted-foreground">
-                        {note.note_type === 'ai' ? t('common.aiGenerated') : t('common.human')}
+                        {isMindMap(note) ? mindMapLabel : note.note_type === 'ai' ? t('common.aiGenerated') : t('common.human')}
                         {' · '}
                         {formatDistanceToNow(new Date(note.updated), {
                           addSuffix: true,
@@ -207,6 +256,13 @@ export function NotesColumn({
           </CardContent>
         </Card>
       </CollapsibleColumn>
+
+      <MindMapDialog
+        open={mindMapOpen}
+        onOpenChange={setMindMapOpen}
+        title={mindMap?.title}
+        markdown={mindMap?.markdown ?? ''}
+      />
 
       <NoteEditorDialog
         open={editorOpen}

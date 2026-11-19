@@ -824,3 +824,17 @@ class NotebookDeleteResponse(BaseModel):
     deleted_chat_sessions: int = Field(
         ..., description="Number of chat sessions deleted"
     )
+
+
+class MindMapRequest(BaseModel):
+    notebook_id: str = Field(..., description="Notebook to build the mind map for")
+    source_ids: list[str] | None = Field(
+        None, description="Sources to use; defaults to all sources in the notebook"
+    )
+    model_id: str | None = Field(None, description="Override the LLM model")
+    language: str | None = Field(
+        None, description="Language for node text; empty or 'auto' = same as sources"
+    )
+    topic: str | None = Field(
+        None, description="Optional focus the user wants the mind map to center on"
+    )

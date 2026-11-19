@@ -1,10 +1,11 @@
+import re
 from typing import List, Literal, Optional
 
 from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
 
-from api.models import NoteCreate, NoteResponse, NoteUpdate
-from open_notebook.domain.notebook import Note
+from api.models import MindMapRequest, NoteCreate, NoteResponse, NoteUpdate
+from open_notebook.domain.notebook import Note, Notebook, Source
 from open_notebook.exceptions import (
     InvalidInputError,
     NotFoundError,
@@ -204,3 +205,107 @@ async def delete_note(note_id: str):
     except Exception as e:
         logger.error(f"Error deleting note {note_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error deleting note: {str(e)}")
+
+
+MINDMAP_PROMPT = """Create a mind map of the content below as a Markdown outline.
+Rules:
+- Write in the SAME language as the content.
+- Line 1 is a single '# ' heading: the central topic (max 8 words).
+- Then 4-8 main branches as '## ' headings, each with 2-5 sub-branches as '- ' bullets.
+  Nested bullets (indented by two spaces) are allowed up to 3 levels deep.
+- Every node is a short phrase (max 10 words), never a full sentence.
+- Output ONLY the Markdown outline. No code fences, no explanations."""
+
+MINDMAP_MAX_CHARS = 80_000
+
+
+def _clean_outline(text: str) -> str:
+    t = text.strip()
+    if t.startswith("```"):
+        t = t.split("\n", 1)[1] if "\n" in t else ""
+    if t.endswith("```"):
+        t = t[:-3]
+    return t.strip()
+
+
+def _build_mindmap_prompt(language: str | None, topic: str | None) -> str:
+    prompt = MINDMAP_PROMPT
+    lang = (language or "").strip()[:40]
+    if lang and lang.lower() != "auto":
+        prompt = prompt.replace(
+            "- Write in the SAME language as the content.",
+            f"- Write ALL node text in {lang}, translating if needed.",
+        )
+    focus = (topic or "").strip()[:500]
+    if focus:
+        prompt += (
+            "\n- The user asked for this focus; build the mind map around it "
+            f"(use only facts from the content): {focus}"
+        )
+    return prompt
+
+
+@router.post("/notes/mindmap", response_model=NoteResponse)
+async def generate_mindmap(req: MindMapRequest):
+    """Generate a mind map (Markdown outline) from sources and save it as a note."""
+    try:
+        from open_notebook.graphs.prompt import graph as prompt_graph
+
+        notebook = await Notebook.get(req.notebook_id)
+
+        if req.source_ids:
+            sources = [await Source.get(sid) for sid in req.source_ids]
+        else:
+            sources = await notebook.get_sources(include_full_text=True)
+        sources = [s for s in sources if s.full_text and s.full_text.strip()]
+
+        if not sources:
+            raise HTTPException(
+                status_code=400, detail="No source content available for a mind map"
+            )
+
+        per_source = MINDMAP_MAX_CHARS // len(sources)
+        context = "\n\n".join(
+            f"## {s.title or 'Untitled'}\n\n{(s.full_text or '')[:per_source]}"
+            for s in sources
+        )
+
+        result = await prompt_graph.ainvoke(  # type: ignore[call-overload]
+            {
+                "input_text": context,
+                "prompt": _build_mindmap_prompt(req.language, req.topic),
+            },
+            config={"configurable": {"model_id": req.model_id}},
+        )
+        outline = _clean_outline(result.get("output", ""))
+        if not outline:
+            raise HTTPException(
+                status_code=502, detail="Model returned an empty mind map"
+            )
+
+        m = re.match(r"#\s+(.+)", outline)
+        title = m.group(1).strip() if m else "Mind map"
+
+        note = Note(title=title, content=outline, note_type="mindmap")
+        await note.save()
+        await note.add_to_notebook(req.notebook_id)
+
+        return NoteResponse(
+            id=note.id or "",
+            title=note.title,
+            content=note.content,
+            note_type=note.note_type,
+            created=str(note.created),
+            updated=str(note.updated),
+        )
+    except HTTPException:
+        raise
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Notebook or source not found")
+    except OpenNotebookError:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating mind map: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error generating mind map: {str(e)}"
+        )
