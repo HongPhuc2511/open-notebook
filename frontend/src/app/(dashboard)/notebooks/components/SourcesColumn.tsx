@@ -71,7 +71,7 @@ export function SourcesColumn({
   contextSelections,
   onContextModeChange,
   onBulkContextModeChange,
-  notes,
+  notes: allNotes,
   notesLoading = false,
   noteContextSelections,
   onNoteContextModeChange,
@@ -81,6 +81,12 @@ export function SourcesColumn({
   fetchNextPage,
 }: SourcesColumnProps) {
   const { t } = useTranslation()
+
+  // Mind maps live in Studio, so keep them out of the Notes group
+  const notes = useMemo(
+    () => allNotes?.filter((n) => (n.note_type as string | undefined) !== 'mindmap'),
+    [allNotes]
+  )
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [addExistingDialogOpen, setAddExistingDialogOpen] = useState(false)

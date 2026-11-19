@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation'
 import { AppShell } from '@/components/layout/AppShell'
 import { NotebookHeader } from '../components/NotebookHeader'
 import { SourcesColumn } from '../components/SourcesColumn'
-import { NotesColumn } from '../components/NotesColumn'
+import { StudioColumn } from '../components/StudioColumn'
 import { ChatColumn } from '../components/ChatColumn'
 import { useNotebook } from '@/lib/hooks/use-notebooks'
 import { useNotebookSources } from '@/lib/hooks/use-sources'
@@ -322,7 +322,7 @@ export default function NotebookPage() {
                     </TabsTrigger>
                     <TabsTrigger value="notes" className="gap-2">
                       <StickyNote className="h-4 w-4" />
-                      {t('common.notes')}
+                      {t('notebooks.studioTitle')}
                     </TabsTrigger>
                     <TabsTrigger value="chat" className="gap-2">
                       <MessageSquare className="h-4 w-4" />
@@ -355,7 +355,9 @@ export default function NotebookPage() {
                   />
                 )}
                 {mobileActiveTab === 'notes' && (
-                  <NotesColumn
+                  <StudioColumn
+                    sources={sources}
+                    sourceContextSelections={contextSelections.sources}
                     notes={notes}
                     isLoading={notesLoading}
                     notebookId={notebookId}
@@ -406,6 +408,11 @@ export default function NotebookPage() {
                 hasNextPage={hasNextPage}
                 isFetchingNextPage={isFetchingNextPage}
                 fetchNextPage={fetchNextPage}
+                notes={notes}
+                notesLoading={notesLoading}
+                noteContextSelections={contextSelections.notes}
+                onNoteContextModeChange={handleNoteContextModeChange}
+                onBulkNoteContextModeChange={handleBulkNoteContext}
               />
             </div>
 
@@ -460,7 +467,9 @@ export default function NotebookPage() {
               )}
               style={notesCollapsed ? undefined : { width: `${widths.notes}%`, minWidth: MIN_SIDE_PX }}
             >
-              <NotesColumn
+              <StudioColumn
+                sources={sources}
+                sourceContextSelections={contextSelections.sources}
                 notes={notes}
                 isLoading={notesLoading}
                 notebookId={notebookId}
