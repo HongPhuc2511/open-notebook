@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
-import { SourceListResponse } from '@/lib/types/api'
+import { NoteResponse, SourceListResponse } from '@/lib/types/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -10,21 +10,39 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Plus, FileText, Link2, ChevronDown, Loader2, ListChecks } from 'lucide-react'
+import {
+  Plus,
+  FileText,
+  Link2,
+  ChevronDown,
+  ChevronRight,
+  Loader2,
+  ListChecks,
+  Globe,
+  Sparkles,
+  ArrowRight,
+  Bot,
+  StickyNote,
+  MoreVertical,
+  Trash2,
+} from 'lucide-react'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
 import { AddSourceDialog } from '@/components/sources/AddSourceDialog'
 import { AddExistingSourceDialog } from '@/components/sources/AddExistingSourceDialog'
 import { SourceCard } from '@/components/sources/SourceCard'
 import { useDeleteSource, useRetrySource, useRemoveSourceFromNotebook } from '@/lib/hooks/use-sources'
+import { useDeleteNote } from '@/lib/hooks/use-notes'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
 import { ContextMode } from '../[id]/page'
-import type { SourceBulkAction } from '@/lib/utils/source-context'
+import type { NoteContextMode } from '../[id]/page'
+import type { SourceBulkAction, NoteContextDefault } from '@/lib/utils/source-context'
 import { CollapsibleColumn, createCollapseButton } from '@/components/notebooks/CollapsibleColumn'
 import { useNotebookColumnsStore } from '@/lib/stores/notebook-columns-store'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { Checkbox } from '@/components/ui/checkbox'
+import { NoteEditorDialog } from './NoteEditorDialog'
 
 interface SourcesColumnProps {
   sources?: SourceListResponse[]
@@ -35,7 +53,11 @@ interface SourcesColumnProps {
   contextSelections?: Record<string, ContextMode>
   onContextModeChange?: (sourceId: string, mode: ContextMode) => void
   onBulkContextModeChange?: (action: SourceBulkAction) => void
-  // Pagination props
+  notes?: NoteResponse[]
+  notesLoading?: boolean
+  noteContextSelections?: Record<string, NoteContextMode>
+  onNoteContextModeChange?: (noteId: string, mode: NoteContextMode) => void
+  onBulkNoteContextModeChange?: (action: NoteContextDefault) => void
   hasNextPage?: boolean
   isFetchingNextPage?: boolean
   fetchNextPage?: () => void
@@ -49,6 +71,11 @@ export function SourcesColumn({
   contextSelections,
   onContextModeChange,
   onBulkContextModeChange,
+  notes,
+  notesLoading = false,
+  noteContextSelections,
+  onNoteContextModeChange,
+  onBulkNoteContextModeChange,
   hasNextPage,
   isFetchingNextPage,
   fetchNextPage,
@@ -62,34 +89,37 @@ export function SourcesColumn({
   const [removeDialogOpen, setRemoveDialogOpen] = useState(false)
   const [sourceToRemove, setSourceToRemove] = useState<string | null>(null)
 
+  const [editorOpen, setEditorOpen] = useState(false)
+  const [editingNote, setEditingNote] = useState<NoteResponse | undefined>()
+  const [noteDeleteDialogOpen, setNoteDeleteDialogOpen] = useState(false)
+  const [noteToDelete, setNoteToDelete] = useState<string | null>(null)
+  const [notesOpen, setNotesOpen] = useState(true)
+
   const { openModal } = useModalManager()
   const deleteSource = useDeleteSource()
   const retrySource = useRetrySource()
   const removeFromNotebook = useRemoveSourceFromNotebook()
+  const deleteNote = useDeleteNote()
 
-  // Collapsible column state
   const { sourcesCollapsed, toggleSources } = useNotebookColumnsStore()
+  const sourcesLabel = t('navigation.sources')
   const collapseButton = useMemo(
-    () => createCollapseButton(toggleSources, t('navigation.sources')),
-    [toggleSources, t('navigation.sources')]
+    () => createCollapseButton(toggleSources, sourcesLabel),
+    [toggleSources, sourcesLabel]
   )
 
-  // Scroll container ref for infinite scroll
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
-  // Handle scroll for infinite loading
   const handleScroll = useCallback(() => {
     const container = scrollContainerRef.current
     if (!container || !hasNextPage || isFetchingNextPage || !fetchNextPage) return
 
     const { scrollTop, scrollHeight, clientHeight } = container
-    // Load more when user scrolls within 200px of the bottom
     if (scrollHeight - scrollTop - clientHeight < 200) {
       fetchNextPage()
     }
   }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
-  // Attach scroll listener
   useEffect(() => {
     const container = scrollContainerRef.current
     if (!container) return
@@ -97,11 +127,20 @@ export function SourcesColumn({
     container.addEventListener('scroll', handleScroll)
     return () => container.removeEventListener('scroll', handleScroll)
   }, [handleScroll])
-  
-  // True when every loaded source is included in the chat context
-  const allSelected =
-    !!sources?.length &&
+
+  const sourcesAllSelected =
+    !sources?.length ||
     sources.every((s) => contextSelections?.[s.id] && contextSelections[s.id] !== 'off')
+  const notesAllSelected =
+    !notes?.length ||
+    notes.every((n) => noteContextSelections?.[n.id] && noteContextSelections[n.id] !== 'off')
+  const hasItems = (sources?.length ?? 0) + (notes?.length ?? 0) > 0
+  const allSelected = hasItems && sourcesAllSelected && notesAllSelected
+
+  const handleToggleAll = () => {
+    onBulkContextModeChange?.(allSelected ? 'exclude' : 'full')
+    onBulkNoteContextModeChange?.(allSelected ? 'exclude' : 'include')
+  }
 
   const handleDeleteClick = (sourceId: string) => {
     setSourceToDelete(sourceId)
@@ -138,7 +177,6 @@ export function SourcesColumn({
       setSourceToRemove(null)
     } catch (error) {
       console.error('Failed to remove source from notebook:', error)
-      // Error toast is handled by the hook
     }
   }
 
@@ -154,90 +192,191 @@ export function SourcesColumn({
     openModal('source', sourceId)
   }
 
+  const handleOpenEditor = (note?: NoteResponse) => {
+    setEditingNote(note)
+    setEditorOpen(true)
+  }
+
+  const handleNoteDeleteClick = (noteId: string) => {
+    setNoteToDelete(noteId)
+    setNoteDeleteDialogOpen(true)
+  }
+
+  const handleNoteDeleteConfirm = async () => {
+    if (!noteToDelete) return
+
+    try {
+      await deleteNote.mutateAsync(noteToDelete)
+      setNoteDeleteDialogOpen(false)
+      setNoteToDelete(null)
+    } catch (error) {
+      console.error('Failed to delete note:', error)
+    }
+  }
+
   return (
     <>
       <CollapsibleColumn
         isCollapsed={sourcesCollapsed}
         onToggle={toggleSources}
         collapsedIcon={FileText}
-        collapsedLabel={t('navigation.sources')}
+        collapsedLabel={sourcesLabel}
       >
-        <Card className="h-full flex flex-col flex-1 gap-3 overflow-hidden rounded-2xl bg-popover py-5">
-          <CardHeader className="pb-3 flex-shrink-0">
+        <Card className="h-full flex flex-col gap-3 overflow-hidden rounded-3xl bg-popover py-5">
+          <CardHeader className="flex-shrink-0 pb-0">
             <div className="flex items-center justify-between gap-2">
-              <CardTitle className="flex items-center gap-2 text-lg font-normal text-foreground">
-                
-                {t('navigation.sources')}
+              <CardTitle className="text-lg font-normal text-foreground">
+                {sourcesLabel}
               </CardTitle>
-              <div className="flex items-center gap-1">
-                {onBulkContextModeChange && sources && sources.length > 0 && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" title={t('sources.bulkContext')}>
-                        <ListChecks className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onBulkContextModeChange('insights')}>
-                        {t('sources.includeAllInsights')}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onBulkContextModeChange('full')}>
-                        {t('sources.includeAllFull')}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onBulkContextModeChange('exclude')}>
-                        {t('sources.excludeAllFromContext')}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-                <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
-                  <DropdownMenuTrigger asChild>
-                    <Button size="sm" variant="tonal" className="rounded-full px-3" title={t('sources.addSource')}>
-                      <Plus className="h-4 w-4" />
-                      <span className="sr-only">{t('sources.addSource')}</span>
-                      <ChevronDown className="ml-1 h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => { setDropdownOpen(false); setAddDialogOpen(true); }}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      {t('sources.addSource')}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => { setDropdownOpen(false); setAddExistingDialogOpen(true); }}>
-                      <Link2 className="h-4 w-4 mr-2" />
-                      {t('sources.addExistingTitle')}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                {collapseButton}
-              </div>
+              {collapseButton}
             </div>
           </CardHeader>
 
-          <CardContent ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0">
-            {isLoading ? (
+          <div className="flex flex-shrink-0 gap-2 px-6">
+            <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+              <DropdownMenuTrigger asChild>
+                <Button variant="secondary" className="h-10 min-w-0 flex-1 rounded-full">
+                  <Plus className="mr-2 h-4 w-4 shrink-0" />
+                  <span className="truncate">{t('sources.addSource')}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem onClick={() => { setDropdownOpen(false); setAddDialogOpen(true) }}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  {t('sources.addSource')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { setDropdownOpen(false); setAddExistingDialogOpen(true) }}>
+                  <Link2 className="mr-2 h-4 w-4" />
+                  {t('sources.addExistingTitle')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Button
+              variant="secondary"
+              className="h-10 min-w-0 flex-1 rounded-full"
+              onClick={() => handleOpenEditor()}
+            >
+              <Plus className="mr-2 h-4 w-4 shrink-0" />
+              <span className="truncate">{t('common.writeNote')}</span>
+            </Button>
+          </div>
+
+          <div className="flex flex-shrink-0 items-center gap-1 px-6">
+            {onBulkContextModeChange && sources && sources.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" title={t('sources.bulkContext')}>
+                    <ListChecks className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem onClick={() => onBulkContextModeChange('insights')}>
+                    {t('sources.includeAllInsights')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onBulkContextModeChange('full')}>
+                    {t('sources.includeAllFull')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onBulkContextModeChange('exclude')}>
+                    {t('sources.excludeAllFromContext')}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            {onBulkContextModeChange && hasItems && (
+              <label className="ml-auto flex cursor-pointer items-center gap-3 py-1 pr-3 text-sm text-muted-foreground">
+                {t('sources.selectAll')}
+                <Checkbox checked={allSelected} onCheckedChange={handleToggleAll} />
+              </label>
+            )}
+          </div>
+
+          <CardContent ref={scrollContainerRef} className="flex-1 min-h-0 overflow-y-auto">
+            {isLoading || notesLoading ? (
               <div className="flex items-center justify-center py-8">
                 <LoadingSpinner />
               </div>
-            ) : !sources || sources.length === 0 ? (
+            ) : !hasItems ? (
               <EmptyState
                 icon={FileText}
                 title={t('sources.noSourcesYet')}
                 description={t('sources.createFirstSource')}
               />
             ) : (
-              <div className="space-y-2">
-                {/* Select-all row above the list, checkbox on the right (NotebookLM style) */}
-                {onBulkContextModeChange && (
-                  <label className="flex cursor-pointer items-center justify-end gap-3 px-3 py-2 text-sm text-muted-foreground">
-                    {t('sources.selectAll')}
-                    <Checkbox
-                      checked={allSelected}
-                      onCheckedChange={() => onBulkContextModeChange(allSelected ? 'exclude' : 'full')}
-                    />
-                  </label>
+              <div className="space-y-1">
+                {notes && notes.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-1 py-1 pl-1 pr-3">
+                      <Button
+                        variant="ghost"
+                        className="h-8 flex-1 justify-start gap-2 px-2 text-sm font-normal"
+                        onClick={() => setNotesOpen((open) => !open)}
+                        aria-expanded={notesOpen}
+                      >
+                        {notesOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                        {t('common.notes')}
+                      </Button>
+                      {onBulkNoteContextModeChange && (
+                        <Checkbox
+                          checked={notesAllSelected}
+                          onCheckedChange={() => onBulkNoteContextModeChange(notesAllSelected ? 'exclude' : 'include')}
+                          aria-label="Include all notes in chat context"
+                        />
+                      )}
+                    </div>
+                    {notesOpen &&
+                      notes.map((note) => (
+                        <div
+                          key={note.id}
+                          className="group relative flex cursor-pointer items-center gap-3 rounded-xl py-2 pl-7 pr-3 transition-colors hover:bg-muted"
+                          onClick={() => handleOpenEditor(note)}
+                        >
+                          {note.note_type === 'ai' ? (
+                            <Bot className="h-5 w-5 shrink-0 text-teal" />
+                          ) : (
+                            <StickyNote className="h-5 w-5 shrink-0 text-muted-foreground" />
+                          )}
+                          <span className="min-w-0 flex-1 truncate text-sm">
+                            {note.title || note.content || t('sources.untitledNote')}
+                          </span>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 shrink-0 p-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleNoteDeleteClick(note.id)
+                                }}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                {t('notebooks.deleteNote')}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                          {onNoteContextModeChange && noteContextSelections?.[note.id] && (
+                            <Checkbox
+                              checked={noteContextSelections[note.id] !== 'off'}
+                              onCheckedChange={(checked) => onNoteContextModeChange(note.id, checked ? 'full' : 'off')}
+                              onClick={(e) => e.stopPropagation()}
+                              aria-label="Include in chat context"
+                            />
+                          )}
+                        </div>
+                      ))}
+                  </div>
                 )}
-                {sources.map((source) => (
+
+                {sources?.map((source) => (
                   <SourceCard
                     key={source.id}
                     source={source}
@@ -255,7 +394,7 @@ export function SourcesColumn({
                     }
                   />
                 ))}
-                {/* Loading indicator for infinite scroll */}
+
                 {isFetchingNextPage && (
                   <div className="flex items-center justify-center py-4">
                     <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -280,6 +419,18 @@ export function SourcesColumn({
         onSuccess={onRefresh}
       />
 
+      <NoteEditorDialog
+        open={editorOpen}
+        onOpenChange={(open) => {
+          setEditorOpen(open)
+          if (!open) {
+            setEditingNote(undefined)
+          }
+        }}
+        notebookId={notebookId}
+        note={editingNote}
+      />
+
       <ConfirmDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
@@ -300,6 +451,17 @@ export function SourcesColumn({
         onConfirm={handleRemoveConfirm}
         isLoading={removeFromNotebook.isPending}
         confirmVariant="default"
+      />
+
+      <ConfirmDialog
+        open={noteDeleteDialogOpen}
+        onOpenChange={setNoteDeleteDialogOpen}
+        title={t('notebooks.deleteNote')}
+        description={t('notebooks.deleteNoteConfirm')}
+        confirmText={t('common.delete')}
+        onConfirm={handleNoteDeleteConfirm}
+        isLoading={deleteNote.isPending}
+        confirmVariant="destructive"
       />
     </>
   )

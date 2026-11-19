@@ -4,10 +4,10 @@ import { memo,useMemo, useCallback, useState, useRef, useEffect, useId } from 'r
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { Bot, User, Send, Loader2, FileText, Lightbulb, StickyNote, Clock } from 'lucide-react'
+import { Bot, User, Send, Loader2, FileText, Lightbulb, StickyNote, History } from 'lucide-react'
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
 import {
   SourceChatMessage,
@@ -15,7 +15,7 @@ import {
   BaseChatSession
 } from '@/lib/types/api'
 import { ModelSelector } from './ModelSelector'
-import { ContextIndicator } from '@/components/common/ContextIndicator'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { SessionManager } from '@/components/sources/SessionManager'
 import { MessageActions } from '@/components/sources/MessageActions'
 import { convertReferencesToCompactMarkdown, createCompactReferenceLinkComponent } from '@/lib/utils/source-references'
@@ -73,7 +73,6 @@ export function ChatPanel({
   onDeleteSession,
   onUpdateSession,
   loadingSessions = false,
-  title,
   contextType = 'source',
   notebookContextStats,
   notebookId,
@@ -110,48 +109,53 @@ export function ChatPanel({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+
+  const hasSessions = Boolean(onSelectSession && onCreateSession && onDeleteSession)
+
+  // Nút lịch sử Sessions nằm ngay trong thanh nhập liệu
+  const sessionsControl = hasSessions ? (
+    <Dialog open={sessionManagerOpen} onOpenChange={setSessionManagerOpen}>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8 rounded-full bg-background/60 text-muted-foreground backdrop-blur hover:bg-muted"
+        onClick={() => setSessionManagerOpen(true)}
+        disabled={loadingSessions}
+        title={t('chat.sessions')}
+        aria-label={t('chat.sessions')}
+      >
+        <History className="h-4 w-4" />
+      </Button>
+      <DialogContent className="sm:max-w-[420px] p-0 overflow-hidden">
+        <DialogTitle className="sr-only">{t('chat.sessionsTitle')}</DialogTitle>
+        <SessionManager
+          sessions={sessions}
+          currentSessionId={currentSessionId ?? null}
+          onCreateSession={(title) => onCreateSession?.(title)}
+          onSelectSession={(sessionId) => {
+            onSelectSession?.(sessionId)
+            setSessionManagerOpen(false)
+          }}
+          onUpdateSession={(sessionId, title) => onUpdateSession?.(sessionId, title)}
+          onDeleteSession={(sessionId) => onDeleteSession?.(sessionId)}
+          loadingSessions={loadingSessions}
+        />
+      </DialogContent>
+    </Dialog>
+  ) : null
+
+  // Số nguồn/ghi chú gọn trong pill, token/ký tự nằm trong tooltip
+  const contextChip = notebookContextStats ? <ContextChip stats={notebookContextStats} /> : null
+
   return (
     <>
-    <Card className="flex flex-col h-full flex-1 overflow-hidden rounded-2xl bg-popover">
-      <CardHeader className="pb-3 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-lg font-normal text-foreground">
-            {title || (contextType === 'source' ? t('chat.chatWith', { name: t('navigation.sources') }) : t('chat.chatWith', { name: t('common.notebook') }))}
-          </CardTitle>
-          {onSelectSession && onCreateSession && onDeleteSession && (
-            <Dialog open={sessionManagerOpen} onOpenChange={setSessionManagerOpen}>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-2 text-muted-foreground"
-                onClick={() => setSessionManagerOpen(true)}
-                disabled={loadingSessions}
-              >
-                <Clock className="h-4 w-4" />
-                <span className="text-xs">{t('chat.sessions')}</span>
-              </Button>
-              <DialogContent className="sm:max-w-[420px] p-0 overflow-hidden">
-                <DialogTitle className="sr-only">{t('chat.sessionsTitle')}</DialogTitle>
-                <SessionManager
-                  sessions={sessions}
-                  currentSessionId={currentSessionId ?? null}
-                  onCreateSession={(title) => onCreateSession?.(title)}
-                  onSelectSession={(sessionId) => {
-                    onSelectSession(sessionId)
-                    setSessionManagerOpen(false)
-                  }}
-                  onUpdateSession={(sessionId, title) => onUpdateSession?.(sessionId, title)}
-                  onDeleteSession={(sessionId) => onDeleteSession?.(sessionId)}
-                  loadingSessions={loadingSessions}
-                />
-              </DialogContent>
-            </Dialog>
-          )}
-        </div>
-      </CardHeader>
+    <Card className="relative flex flex-col h-full flex-1 overflow-hidden rounded-2xl bg-popover">
+      {sessionsControl && (
+        <div className="absolute right-3 top-2 z-10">{sessionsControl}</div>
+      )}
       <CardContent className="flex-1 flex flex-col min-h-0 p-0">
         <ScrollArea className="flex-1 min-h-0 px-4" ref={scrollAreaRef}>
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 pb-4 pt-10">
             {messages.length === 0 ? (
               <div className="text-center text-muted-foreground py-8">
                 <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -214,24 +218,13 @@ export function ChatPanel({
 
         {/* Input Area */}
         <ChatComposer
+          contextChip={contextChip}
           onSendMessage={onSendMessage}
           isStreaming={isStreaming}
           modelOverride={modelOverride}
           onModelChange={onModelChange}
         />
-
-        {/* Notebook Context Indicator, now below the input like NotebookLM's footer note */}
-        {notebookContextStats && (
-          <ContextIndicator
-            className="order-1 mx-4 mb-1 mt-1 rounded-xl"
-            sourcesInsights={notebookContextStats.sourcesInsights}
-            sourcesFull={notebookContextStats.sourcesFull}
-            notesCount={notebookContextStats.notesCount}
-            tokenCount={notebookContextStats.tokenCount}
-            charCount={notebookContextStats.charCount}
-          />
-        )}
-        <p className="order-3 px-4 pb-2 pt-1 text-center text-[11px] text-muted-foreground">
+        <p className="order-3 px-4 pb-1 pt-0.5 text-center text-[11px] text-muted-foreground">
             {t('chat.aiDisclaimer')}
         </p>
       </CardContent>
@@ -244,6 +237,7 @@ export function ChatPanel({
 // Composer owns the input state so keystrokes (including IME composition) only
 // re-render this small component instead of the whole message history.
 interface ChatComposerProps {
+  contextChip?: React.ReactNode
   onSendMessage: (message: string, modelOverride?: string) => void
   isStreaming: boolean
   modelOverride?: string
@@ -251,6 +245,7 @@ interface ChatComposerProps {
 }
 
 function ChatComposer({
+  contextChip,
   onSendMessage,
   isStreaming,
   modelOverride,
@@ -259,47 +254,38 @@ function ChatComposer({
   const { t } = useTranslation()
   const chatInputId = useId()
   const [input, setInput] = useState('')
+  const [multiline, setMultiline] = useState(false)
 
   const handleSend = () => {
     if (input.trim() && !isStreaming) {
       onSendMessage(input.trim(), modelOverride)
       setInput('')
+      setMultiline(false)
     }
   }
 
+  // Enter gửi, Shift+Enter xuống dòng (Ctrl/Cmd+Enter vẫn gửi được)
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Detect platform for correct modifier key
-    const isMac = typeof navigator !== 'undefined' && navigator.userAgent.toUpperCase().indexOf('MAC') >= 0
-    const isModifierPressed = isMac ? e.metaKey : e.ctrlKey
-
-    if (e.key === 'Enter' && isModifierPressed) {
-      e.preventDefault()
-      handleSend()
-    }
+    if (e.key !== 'Enter') return
+    // Đang gõ bằng IME (tiếng Việt, Nhật, Trung...) thì Enter chỉ để chốt chữ
+    if (e.nativeEvent.isComposing || e.keyCode === 229) return
+    if (e.shiftKey) return
+    e.preventDefault()
+    handleSend()
   }
-
-  // Detect platform for placeholder text
-  const isMac = typeof navigator !== 'undefined' && navigator.userAgent.toUpperCase().indexOf('MAC') >= 0
-  const keyHint = isMac ? '⌘+Enter' : 'Ctrl+Enter'
 
   return (
-    <div className="order-2 flex-shrink-0 px-4 pb-0 pt-2">
-      {/* One pill holds the input, the model picker and the send button */}
-      <div className="flex min-w-0 items-end gap-2 rounded-3xl border bg-background py-1.5 pl-5 pr-1.5 shadow-sm focus-within:border-primary/50">
-        <Textarea
-          id={chatInputId}
-          name="chat-message"
-          autoComplete="off"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={`${t('chat.sendPlaceholder')} (${t('chat.pressToSend', { key: keyHint })})`}
-          disabled={isStreaming}
-          className="min-h-[40px] max-h-[100px] min-w-0 flex-1 resize-none border-0 bg-transparent px-0 py-2.5 shadow-none focus-visible:ring-0 dark:bg-transparent"
-          rows={1}
-        />
+    <div className="order-2 flex-shrink-0 px-4 pb-1 pt-2">
+      {/* Một pill duy nhất: [model] [ô nhập] [số nguồn] [gửi] */}
+      <div
+        className={
+          'flex min-h-12 min-w-0 gap-1 border bg-background py-1.5 pr-1.5 shadow-sm focus-within:border-primary/50 ' +
+          (onModelChange ? 'pl-1.5 ' : 'pl-4 ') +
+          (multiline ? 'items-end rounded-3xl' : 'items-center rounded-full')
+        }
+      >
         {onModelChange && (
-          <div className="shrink-0 self-center" title={t('chat.model')}>
+          <div className="shrink-0">
             <ModelSelector
               currentModel={modelOverride}
               onModelChange={onModelChange}
@@ -307,11 +293,28 @@ function ChatComposer({
             />
           </div>
         )}
+        <Textarea
+          id={chatInputId}
+          name="chat-message"
+          autoComplete="off"
+          value={input}
+          onChange={(e) => {
+            setInput(e.target.value)
+            setMultiline(e.target.scrollHeight > 48)
+          }}
+          onKeyDown={handleKeyDown}
+          placeholder={t('chat.sendPlaceholder')}
+          title={t('chat.pressToSend', { key: 'Enter' })}
+          disabled={isStreaming}
+          className="min-h-9 max-h-[120px] min-w-0 flex-1 resize-none border-0 bg-transparent px-2 py-2 shadow-none focus-visible:ring-0 dark:bg-transparent"
+          rows={1}
+        />
+        {contextChip && <div className="flex h-9 shrink-0 items-center">{contextChip}</div>}
         <Button
           onClick={handleSend}
           disabled={!input.trim() || isStreaming}
           size="icon"
-          className="h-10 w-10 shrink-0 rounded-full"
+          className="h-9 w-9 shrink-0 rounded-full"
         >
           {isStreaming ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -422,5 +425,53 @@ function AIMessageContent({
     <MarkdownRenderer components={{ a: LinkComponent }}>
       {markdown}
     </MarkdownRenderer>
+  )
+}
+
+function formatCompact(n: number): string {
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M'
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'K'
+  return String(n)
+}
+
+// Nhãn gọn "6 nguồn" cạnh nút gửi, chi tiết nằm trong tooltip
+function ContextChip({ stats }: { stats: NotebookContextStats }) {
+  const { t } = useTranslation()
+  const total = stats.sourcesInsights + stats.sourcesFull + stats.notesCount
+  const tokens = stats.tokenCount ?? 0
+  const chars = stats.charCount ?? 0
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="cursor-default whitespace-nowrap px-1 text-xs text-muted-foreground/70">
+          {total} {t('navigation.sources').toLowerCase()}
+        </span>
+      </TooltipTrigger>
+      <TooltipContent side="top">
+        {total > 0 ? (
+          <div className="space-y-0.5 text-xs">
+            {stats.sourcesInsights > 0 && (
+              <p>Insights for {stats.sourcesInsights} source{stats.sourcesInsights !== 1 ? 's' : ''}</p>
+            )}
+            {stats.sourcesFull > 0 && (
+              <p>{stats.sourcesFull} full source{stats.sourcesFull !== 1 ? 's' : ''}</p>
+            )}
+            {stats.notesCount > 0 && (
+              <p>{stats.notesCount} full note{stats.notesCount !== 1 ? 's' : ''}</p>
+            )}
+            {(tokens > 0 || chars > 0) && (
+              <p>
+                {tokens > 0 ? formatCompact(tokens) + ' tokens' : ''}
+                {tokens > 0 && chars > 0 ? ' / ' : ''}
+                {chars > 0 ? formatCompact(chars) + ' chars' : ''}
+              </p>
+            )}
+          </div>
+        ) : (
+          <p className="text-xs">No sources or notes included in context. Tick a source to include it.</p>
+        )}
+      </TooltipContent>
+    </Tooltip>
   )
 }

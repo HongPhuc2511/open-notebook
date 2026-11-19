@@ -520,7 +520,7 @@ export function AddSourceDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="min-w-0">
-          <div className="max-h-[60vh] min-w-0 space-y-4 overflow-y-auto px-8 py-4">
+          <div className="h-[480px] max-h-[65vh] min-w-0 space-y-5 overflow-y-auto px-8 py-4">
             <SourceTypeStep
               // @ts-expect-error - Type inference issue with zod schema
               control={control}

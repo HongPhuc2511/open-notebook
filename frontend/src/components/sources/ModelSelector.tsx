@@ -19,7 +19,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { Settings2, Sparkles } from 'lucide-react'
+import { SlidersHorizontal, Sparkles } from 'lucide-react'
 import { useModelDefaults, useModels } from '@/lib/hooks/use-models'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
@@ -84,16 +84,15 @@ export function ModelSelector({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button 
-          variant="outline" 
-          size="sm"
+        <Button
+          variant="ghost"
+          size="icon"
           disabled={disabled}
-          className="gap-2"
+          className="h-9 w-9 rounded-full text-muted-foreground"
+          title={currentModelName}
+          aria-label={currentModelName}
         >
-          <Settings2 className="h-4 w-4" />
-          <span className="text-xs">
-            {currentModelName}
-          </span>
+          <SlidersHorizontal className="h-4 w-4" />
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
