@@ -4,7 +4,7 @@ import { useMemo, useState } from "react"
 import { Control, FieldErrors, UseFormRegister, UseFormSetValue, useWatch } from "react-hook-form"
 import { FileIcon, LinkIcon, FileTextIcon, UploadIcon } from "lucide-react"
 import { useTranslation } from "@/lib/hooks/use-translation"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
@@ -66,15 +66,15 @@ import type { TFunction } from 'i18next'
 
 const getSourceTypes = (t: TFunction) => [
   {
-    value: 'link' as const,
-    label: t('sources.addUrl'),
-    icon: LinkIcon,
-    description: t('sources.processDescription'),
-  },
-  {
     value: 'upload' as const,
     label: t('sources.uploadFile'),
     icon: FileIcon,
+    description: t('sources.processDescription'),
+  },
+  {
+    value: 'link' as const,
+    label: t('sources.addUrl'),
+    icon: LinkIcon,
     description: t('sources.processDescription'),
   },
   {
@@ -159,25 +159,35 @@ export function SourceTypeStep({ control, register, setValue, errors, urlValidat
           control={control}
           name="type"
           render={({ field }) => (
-            <Tabs 
-              value={field.value || ''} 
-              onValueChange={(value) => field.onChange(value as 'link' | 'upload' | 'text')}
-              className="w-full"
-            >
-              <TabsList className="flex w-full flex-wrap justify-center gap-2">
+            <div className="w-full">
+              <div className="flex w-full flex-wrap justify-center gap-2">
                 {getSourceTypes(t).map((type) => {
                   const Icon = type.icon
+                  const active = field.value === type.value
                   return (
-                    <TabsTrigger key={type.value} value={type.value} className="flex-none gap-2 border border-border bg-popover px-5 data-[state=active]:border-transparent">
+                    <button
+                      key={type.value}
+                      type="button"
+                      aria-pressed={active}
+                      onClick={() => field.onChange(type.value)}
+                      className={cn(
+                        'inline-flex h-10 items-center gap-2 rounded-full border px-4 text-sm transition-colors',
+                        active
+                          ? 'border-transparent bg-tonal text-tonal-foreground'
+                          : 'border-border bg-popover hover:bg-muted'
+                      )}
+                    >
                       <Icon className="h-4 w-4" />
                       {type.label}
-                    </TabsTrigger>
+                    </button>
                   )
                 })}
-              </TabsList>
-              
-              {getSourceTypes(t).map((type) => (
-                <TabsContent key={type.value} value={type.value} className="mt-4">
+              </div>
+
+              {getSourceTypes(t)
+                .filter((type) => type.value === field.value)
+                .map((type) => (
+                <div key={type.value} className="mt-4">
                   
                   {/* Type-specific fields */}
                   {type.value === 'link' && (
@@ -240,7 +250,7 @@ export function SourceTypeStep({ control, register, setValue, errors, urlValidat
                           </Badge>
                         )}
                       </div>
-                                            <div className="relative flex min-h-[200px] flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-border bg-secondary/50 px-6 py-8 text-center transition-colors focus-within:ring-2 focus-within:ring-ring hover:bg-secondary">
+                                            <div className="relative flex min-h-[180px] flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-border bg-transparent px-6 py-8 text-center transition-colors focus-within:ring-2 focus-within:ring-ring hover:bg-muted/50">
                         <UploadIcon className="h-6 w-6 text-muted-foreground" aria-hidden="true" />
                         {fileCount > 0 && fileInput instanceof FileList ? (
                           <p className="max-w-full truncate text-sm font-medium">
@@ -311,9 +321,9 @@ export function SourceTypeStep({ control, register, setValue, errors, urlValidat
                       )}
                     </div>
                   )}
-                </TabsContent>
+                </div>
               ))}
-            </Tabs>
+            </div>
           )}
         />
         {errors.type && (

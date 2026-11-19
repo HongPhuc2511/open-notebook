@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import {
   FileText,
-  ExternalLink,
+  Globe,
   Upload,
   MoreVertical,
   Trash2,
@@ -46,7 +46,7 @@ interface SourceCardProps {
 }
 
 const SOURCE_TYPE_ICONS = {
-  link: ExternalLink,
+  link: Globe,
   upload: Upload,
   text: FileText,
 } as const
@@ -222,105 +222,51 @@ function SourceCardImpl({
   return (
     <Card
       className={cn(
-        'transition-colors duration-150 shadow-none border-0 bg-transparent rounded-xl hover:bg-muted group relative cursor-pointer',
+        'group relative cursor-pointer gap-0 rounded-xl border-0 bg-transparent py-0 shadow-none transition-colors duration-150 hover:bg-muted',
         className
       )}
       onClick={handleCardClick}
     >
-      <CardContent className="px-3 py-1">
-        {/* Header with status indicator */}
-        <div className="flex items-start justify-between gap-3 mb-1">
-          <div className="flex-1 min-w-0">
-            {/* Status badge - only show if not completed */}
+      <CardContent className="px-3 py-2">
+        <div className="flex items-center gap-3">
+          <SourceTypeIcon className="h-5 w-5 shrink-0 text-muted-foreground" />
+
+          <div className="min-w-0 flex-1">
+            <h4 className="truncate text-sm leading-tight" title={title}>
+              {title}
+            </h4>
+
             {!isCompleted && (
-              <div className="flex items-center gap-2 mb-2">
+              <div className="mt-1 flex items-center gap-2">
                 <div className={cn(
-                  'flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium',
+                  'flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-medium',
                   statusConfig.bgColor,
                   statusConfig.color
                 )}>
-                  <StatusIcon className={cn(
-                    'h-3 w-3',
-                    isProcessing && 'animate-spin'
-                  )} />
+                  <StatusIcon className={cn('h-3 w-3', isProcessing && 'animate-spin')} />
                   {statusLoading && shouldFetchStatus ? t('sources.checking') : statusConfig.label}
-                </div>
-
-                {/* Source type indicator */}
-                <div className="flex items-center gap-1 text-muted-foreground">
-                  <SourceTypeIcon className="h-3 w-3" />
-                  <span className="text-xs capitalize">{t('common.source')}</span>
                 </div>
               </div>
             )}
 
-            {/* Title */}
-            <div className={cn('mb-1.5 flex items-center gap-2', !isCompleted && 'mb-1')}>
-              <SourceTypeIcon className="h-5 w-5 shrink-0 text-primary" />
-              <h4
-                className="text-sm font-medium leading-tight line-clamp-2 break-all pr-8"
-                title={title}
-              >
-                {title}
-              </h4>
-            </div>
-
-            {/* Processing message for active statuses */}
             {statusData?.message && (isProcessing || isFailed) && (
-              <p className="text-xs text-muted-foreground mb-2 italic">
+              <p className="mt-1 text-xs italic text-muted-foreground">
                 {statusData.message}
               </p>
             )}
-
-            {/* One-line metadata row: type + meta in a single muted line */}
-            <div className="flex items-center gap-1.5 flex-wrap text-xs text-muted-foreground min-w-0">
-              <span className="inline-flex items-center gap-1">
-                <SourceTypeIcon className="h-3 w-3" />
-                {sourceType === 'link' ? t('sources.addUrl') : sourceType === 'upload' ? t('sources.uploadFile') : t('sources.enterText')}
-              </span>
-
-              {isCompleted && source.insights_count > 0 && (
-                <>
-                  <span aria-hidden>·</span>
-                  <span>{t('sources.insightsCount', { count: source.insights_count })}</span>
-                </>
-              )}
-              {source.topics && source.topics.length > 0 && isCompleted && (
-                <>
-                  <span aria-hidden>·</span>
-                  <span className="truncate">
-                    {source.topics.slice(0, 2).join(', ')}
-                    {source.topics.length > 2 && ` +${source.topics.length - 2}`}
-                  </span>
-                </>
-              )}
-            </div>
           </div>
 
-          {/* Context toggle and actions */}
-          <div className="flex items-center gap-1">
-            {/* Context toggle - only show if handler provided */}
-            {onContextModeChange && contextMode && (
-              <Checkbox
-                checked={contextMode !== 'off'}
-                onCheckedChange={(checked) => onContextModeChange(checked ? 'full' : 'off')}
-                onClick={(e) => e.stopPropagation()} // do not open the source modal
-                aria-label="Include in chat context"
-              />
-            )}
-
-            {/* Actions dropdown — ⋮ pinned to the card's top-right */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="absolute top-1.5 right-8 h-7 w-7 p-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 shrink-0 p-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 data-[state=open]:opacity-100"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               {showRemoveFromNotebook && (
                 <>
@@ -331,7 +277,7 @@ function SourceCardImpl({
                     }}
                     disabled={!onRemoveFromNotebook}
                   >
-                    <Unlink className="h-4 w-4 mr-2" />
+                    <Unlink className="mr-2 h-4 w-4" />
                     {t('sources.removeFromNotebook')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -347,7 +293,7 @@ function SourceCardImpl({
                     }}
                     disabled={!onRetry}
                   >
-                    <RefreshCw className="h-4 w-4 mr-2" />
+                    <RefreshCw className="mr-2 h-4 w-4" />
                     {t('sources.retryProcessing')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -362,7 +308,7 @@ function SourceCardImpl({
                       handleRefreshContent()
                     }}
                   >
-                    <RefreshCw className="h-4 w-4 mr-2" />
+                    <RefreshCw className="mr-2 h-4 w-4" />
                     {t('sources.refreshContent')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -377,17 +323,24 @@ function SourceCardImpl({
                 disabled={!onDelete}
                 className="text-destructive focus:text-destructive"
               >
-                <Trash2 className="h-4 w-4 mr-2" />
+                <Trash2 className="mr-2 h-4 w-4" />
                 {t('sources.deleteSource')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          </div>
+
+          {onContextModeChange && contextMode && (
+            <Checkbox
+              checked={contextMode !== 'off'}
+              onCheckedChange={(checked) => onContextModeChange(checked ? 'full' : 'off')}
+              onClick={(e) => e.stopPropagation()}
+              aria-label="Include in chat context"
+            />
+          )}
         </div>
-        {/* Prominent retry action surfaced directly on failed cards so it's
-            discoverable without opening the dropdown menu (#726). */}
+
         {isFailed ? (
-          <div className="flex gap-2 pt-2 border-t">
+          <div className="flex gap-2 border-t pt-2 mt-2">
             <Button
               variant="default"
               size="sm"
@@ -398,24 +351,23 @@ function SourceCardImpl({
               disabled={!onRetry}
               className="h-7 text-xs"
             >
-              <RefreshCw className="h-3 w-3 mr-1" />
+              <RefreshCw className="mr-1 h-3 w-3" />
               {t('sources.retryProcessing')}
             </Button>
           </div>
         ) : null}
 
-        {/* Processing progress indicator */}
         {isProcessing && typeof statusData?.processing_info?.progress === 'number' && (
-          <div className="mt-3 pt-2 border-t">
-            <div className="flex justify-between items-center mb-1">
-            <span className="text-xs text-muted-foreground">{t('common.progress')}</span>
+          <div className="mt-2 border-t pt-2">
+            <div className="mb-1 flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">{t('common.progress')}</span>
               <span className="text-xs text-muted-foreground">
                 {Math.round(statusData.processing_info.progress as number)}%
               </span>
             </div>
-            <div className="w-full bg-muted rounded-full h-1.5">
+            <div className="h-1.5 w-full rounded-full bg-muted">
               <div
-                className="bg-teal h-1.5 rounded-full transition-all duration-300"
+                className="h-1.5 rounded-full bg-teal transition-all duration-300"
                 style={{ width: `${statusData.processing_info.progress as number}%` }}
               />
             </div>
@@ -424,7 +376,7 @@ function SourceCardImpl({
       </CardContent>
     </Card>
   )
-}
+}  
 
 /**
  * SourceCard is rendered in long lists (one per source). Without memoization, any

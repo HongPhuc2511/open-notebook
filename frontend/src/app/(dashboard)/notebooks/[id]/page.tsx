@@ -351,6 +351,11 @@ export default function NotebookPage() {
                     hasNextPage={hasNextPage}
                     isFetchingNextPage={isFetchingNextPage}
                     fetchNextPage={fetchNextPage}
+                    notes={notes}
+                    notesLoading={notesLoading}
+                    noteContextSelections={contextSelections.notes}
+                    onNoteContextModeChange={handleNoteContextModeChange}
+                    onBulkNoteContextModeChange={handleBulkNoteContext}
                   />
                 )}
                 {mobileActiveTab === 'notes' && (
