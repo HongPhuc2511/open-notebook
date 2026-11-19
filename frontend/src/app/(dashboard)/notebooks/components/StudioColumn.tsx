@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
-import { MoreVertical, Network, Sparkles, Trash2 } from 'lucide-react'
+import { ClipboardList, MoreVertical, Network, Sparkles, Trash2 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { NoteResponse, SourceListResponse } from '@/lib/types/api'
@@ -25,6 +25,10 @@ import { useTranslation } from '@/lib/hooks/use-translation'
 import { useDeleteNote } from '@/lib/hooks/use-notes'
 import { useGenerateMindMap } from '@/lib/hooks/use-mindmap'
 import { mindmapApi } from '@/lib/api/mindmap'
+import { quizApi, parseQuiz, type QuizData } from '@/lib/api/quiz'
+import { useGenerateQuiz } from '@/lib/hooks/use-quiz'
+import { QuizDialog } from '@/components/notebooks/QuizDialog'
+import { QuizConfigDialog, type QuizConfigValues } from '@/components/notebooks/QuizConfigDialog'
 import { getDateLocale } from '@/lib/utils/date-locale'
 import type { ContextMode, NoteContextMode } from '../[id]/page'
 import type { NoteContextDefault } from '@/lib/utils/source-context'
@@ -48,7 +52,27 @@ interface StudioTool {
   onClick: () => void
 }
 
-const isMindMap = (note: NoteResponse) => (note.note_type as string | undefined) === 'mindmap'
+type OutputKind = 'mindmap' | 'quiz'
+
+const outputKind = (note: NoteResponse): OutputKind | null => {
+  if (note.note_type === 'mindmap') return 'mindmap'
+  if (note.note_type === 'quiz') return 'quiz'
+  return null
+}
+
+function PendingRow({ icon: Icon, title, hint }: { icon: LucideIcon; title: string; hint: string }) {
+  return (
+    <div className="flex items-center gap-3 rounded-xl px-3 py-2.5">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+        <Icon className="h-5 w-5 animate-pulse text-teal" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <h4 className="truncate text-sm font-medium">{title}</h4>
+        <p className="truncate text-xs text-muted-foreground">{hint}</p>
+      </div>
+    </div>
+  )
+}
 const sourceTitle = (s: SourceListResponse) =>
   (s as unknown as { title?: string | null }).title || s.id
 
@@ -65,6 +89,7 @@ export function StudioColumn({
   const tr = (vi: string, en: string) => (language?.startsWith('vi') ? vi : en)
   const studioLabel = t('notebooks.studioTitle')
   const mindMapLabel = tr('Sơ đồ tư duy', 'Mind map')
+  const quizLabel = tr('Bài kiểm tra', 'Quiz')
 
   const { notesCollapsed, toggleNotes } = useNotebookColumnsStore()
   const collapseButton = useMemo(
@@ -75,14 +100,25 @@ export function StudioColumn({
   const [configOpen, setConfigOpen] = useState(false)
   const [mindMapOpen, setMindMapOpen] = useState(false)
   const [mindMap, setMindMap] = useState<{ title?: string | null; markdown: string } | null>(null)
+  const [quizConfigOpen, setQuizConfigOpen] = useState(false)
+  const [quizOpen, setQuizOpen] = useState(false)
+  const [quiz, setQuiz] = useState<{ title?: string | null; data: QuizData } | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null)
 
   const generateMindMap = useGenerateMindMap()
+  const generateQuiz = useGenerateQuiz()
   const deleteNote = useDeleteNote()
 
   // Only generated outputs live in Studio; regular notes are in the Sources column
-  const mindMaps = useMemo(() => (notes ?? []).filter(isMindMap), [notes])
+  const outputs = useMemo(
+    () =>
+      (notes ?? []).flatMap((note) => {
+        const kind = outputKind(note)
+        return kind ? [{ note, kind }] : []
+      }),
+    [notes]
+  )
 
   // Sources offered in the config dialog, pre-selected like the Sources column
   const configSources = useMemo(
@@ -125,6 +161,50 @@ export function StudioColumn({
     }
   }
 
+  const showQuiz = (title: string | null, content: string | null) => {
+    const data = parseQuiz(content)
+    if (!data) {
+      toast.error(tr('Không mở được bài kiểm tra', 'Failed to open quiz'))
+      return
+    }
+    setQuiz({ title, data })
+    setQuizOpen(true)
+  }
+
+  const handleSubmitQuizConfig = async (values: QuizConfigValues) => {
+    setQuizConfigOpen(false)
+    try {
+      const note = await generateQuiz.mutateAsync({
+        notebookId,
+        sourceIds: values.sourceIds,
+        language: values.language,
+        topic: values.topic,
+        questionCount: values.questionCount,
+        difficulty: values.difficulty,
+        questionTypes: values.questionTypes,
+      })
+      if (values.openWhenDone) {
+        showQuiz(note.title, note.content)
+      } else {
+        toast.success(tr('Bài kiểm tra đã sẵn sàng trong Studio', 'Your quiz is ready in Studio'))
+      }
+    } catch {
+      // error toast is shown by the hook
+    }
+  }
+
+  const handleOpenQuiz = async (note: NoteResponse) => {
+    try {
+      const full = await quizApi.get(note.id)
+      showQuiz(full.title, full.content)
+    } catch {
+      toast.error(tr('Không mở được bài kiểm tra', 'Failed to open quiz'))
+    }
+  }
+
+  const handleOpenOutput = (note: NoteResponse, kind: OutputKind) =>
+    kind === 'quiz' ? handleOpenQuiz(note) : handleOpenMindMap(note)
+
   const handleDeleteConfirm = async () => {
     if (!noteToDelete) return
     try {
@@ -136,7 +216,6 @@ export function StudioColumn({
     }
   }
 
-  // Add more Studio tools here later (audio overview, report, quiz...)
   const tools: StudioTool[] = [
     {
       id: 'mindmap',
@@ -144,6 +223,13 @@ export function StudioColumn({
       icon: Network,
       busy: generateMindMap.isPending,
       onClick: () => setConfigOpen(true),
+    },
+    {
+      id: 'quiz',
+      label: quizLabel,
+      icon: ClipboardList,
+      busy: generateQuiz.isPending,
+      onClick: () => setQuizConfigOpen(true),
     },
   ]
 
@@ -197,87 +283,89 @@ export function StudioColumn({
             ) : (
               <div className="space-y-1">
                 {generateMindMap.isPending && (
-                  <div className="flex items-center gap-3 rounded-xl px-3 py-2.5">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted">
-                      <Network className="h-5 w-5 animate-pulse text-teal" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <h4 className="truncate text-sm font-medium">
-                        {tr('Đang tạo sơ đồ tư duy...', 'Generating mind map...')}
-                      </h4>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {tr('Có thể mất đến một phút', 'This can take up to a minute')}
-                      </p>
-                    </div>
-                  </div>
+                  <PendingRow
+                    icon={Network}
+                    title={tr('Đang tạo sơ đồ tư duy...', 'Generating mind map...')}
+                    hint={tr('Có thể mất đến một phút', 'This can take up to a minute')}
+                  />
                 )}
 
-                {mindMaps.map((note) => (
-                  <div
-                    key={note.id}
-                    className="group relative flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-muted"
-                    onClick={() => handleOpenMindMap(note)}
-                  >
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted group-hover:bg-background">
-                      <Network className="h-5 w-5 text-teal" />
-                    </div>
+                {generateQuiz.isPending && (
+                  <PendingRow
+                    icon={ClipboardList}
+                    title={tr('Đang tạo bài kiểm tra...', 'Generating quiz...')}
+                    hint={tr('Có thể mất đến một phút', 'This can take up to a minute')}
+                  />
+                )}
 
-                    <div className="min-w-0 flex-1">
-                      <h4 className="truncate text-sm font-medium">
-                        {note.title || mindMapLabel}
-                      </h4>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {mindMapLabel}
-                        {' · '}
-                        {formatDistanceToNow(new Date(note.updated), {
-                          addSuffix: true,
-                          locale: getDateLocale(language),
-                        })}
-                      </p>
-                    </div>
+                {outputs.map(({ note, kind }) => {
+                  const OutputIcon = kind === 'quiz' ? ClipboardList : Network
+                  const kindLabel = kind === 'quiz' ? quizLabel : mindMapLabel
+                  return (
+                    <div
+                      key={note.id}
+                      className="group relative flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-muted"
+                      onClick={() => handleOpenOutput(note, kind)}
+                    >
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted group-hover:bg-background">
+                        <OutputIcon className="h-5 w-5 text-teal" />
+                      </div>
 
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 shrink-0 p-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                      <div className="min-w-0 flex-1">
+                        <h4 className="truncate text-sm font-medium">{note.title || kindLabel}</h4>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {kindLabel}
+                          {' · '}
+                          {formatDistanceToNow(new Date(note.updated), {
+                            addSuffix: true,
+                            locale: getDateLocale(language),
+                          })}
+                        </p>
+                      </div>
+
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 shrink-0 p-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setNoteToDelete(note.id)
+                              setDeleteDialogOpen(true)
+                            }}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            {t('notebooks.deleteNote')}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+
+                      {onContextModeChange && contextSelections?.[note.id] && (
+                        <Checkbox
+                          checked={contextSelections[note.id] !== 'off'}
+                          onCheckedChange={(checked) => onContextModeChange(note.id, checked ? 'full' : 'off')}
                           onClick={(e) => e.stopPropagation()}
-                        >
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setNoteToDelete(note.id)
-                            setDeleteDialogOpen(true)
-                          }}
-                          className="text-destructive focus:text-destructive"
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          {t('notebooks.deleteNote')}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                          aria-label="Include in chat context"
+                        />
+                      )}
+                    </div>
+                  )
+                })}
 
-                    {onContextModeChange && contextSelections?.[note.id] && (
-                      <Checkbox
-                        checked={contextSelections[note.id] !== 'off'}
-                        onCheckedChange={(checked) => onContextModeChange(note.id, checked ? 'full' : 'off')}
-                        onClick={(e) => e.stopPropagation()}
-                        aria-label="Include in chat context"
-                      />
-                    )}
-                  </div>
-                ))}
-
-                {mindMaps.length === 0 && !generateMindMap.isPending && (
+                {outputs.length === 0 && !generateMindMap.isPending && !generateQuiz.isPending && (
                   <p className="px-1 pt-2 text-xs text-muted-foreground">
                     {tr(
-                      'Kết quả bạn tạo trong Studio sẽ được lưu ở đây. Bấm "Sơ đồ tư duy" để bắt đầu.',
-                      'Outputs you create in Studio are saved here. Click "Mind map" to get started.'
+                      'Kết quả bạn tạo trong Studio sẽ được lưu ở đây. Chọn một công cụ ở trên để bắt đầu.',
+                      'Outputs you create in Studio are saved here. Pick a tool above to get started.'
                     )}
                   </p>
                 )}
@@ -300,6 +388,21 @@ export function StudioColumn({
         onOpenChange={setMindMapOpen}
         title={mindMap?.title}
         markdown={mindMap?.markdown ?? ''}
+      />
+
+      <QuizConfigDialog
+        open={quizConfigOpen}
+        onOpenChange={setQuizConfigOpen}
+        sources={configSources}
+        defaultSelectedIds={defaultSelectedIds}
+        onSubmit={handleSubmitQuizConfig}
+      />
+
+      <QuizDialog
+        open={quizOpen}
+        onOpenChange={setQuizOpen}
+        title={quiz?.title}
+        quiz={quiz?.data ?? null}
       />
 
       <ConfirmDialog

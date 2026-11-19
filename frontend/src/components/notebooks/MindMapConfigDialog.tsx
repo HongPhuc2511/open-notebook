@@ -70,7 +70,7 @@ export function MindMapConfigDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl gap-5">
+      <DialogContent className="gap-4 p-6" style={{ width: 'calc(100% - 2rem)', maxWidth: '32rem', borderRadius: 28 }}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl font-normal">
             <Network className="h-5 w-5 text-teal" />
@@ -136,7 +136,7 @@ export function MindMapConfigDialog({
           <textarea
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
-            rows={5}
+            rows={4}
             maxLength={500}
             placeholder={tr(
               'Những điều nên thử\n• Giới hạn trong một nguồn cụ thể (ví dụ: "bài viết về nước Ý")\n• Tập trung vào các khái niệm chính\n• Tạo sơ đồ giúp tôi tìm hiểu các nguyên nhân dẫn đến một sự kiện',

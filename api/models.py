@@ -838,3 +838,25 @@ class MindMapRequest(BaseModel):
     topic: str | None = Field(
         None, description="Optional focus the user wants the mind map to center on"
     )
+
+
+class QuizRequest(BaseModel):
+    notebook_id: str = Field(..., description="Notebook to build the quiz for")
+    source_ids: list[str] | None = Field(
+        None, description="Sources to use; defaults to all sources in the notebook"
+    )
+    model_id: str | None = Field(None, description="Override the LLM model")
+    language: str | None = Field(
+        None, description="Language for the quiz; empty or 'auto' = same as sources"
+    )
+    topic: str | None = Field(
+        None, description="Optional focus the user wants the quiz to center on"
+    )
+    question_count: int = Field(10, ge=1, le=30, description="Number of questions")
+    difficulty: Literal["easy", "medium", "hard"] = Field(
+        "medium", description="Quiz difficulty"
+    )
+    question_types: list[Literal["single", "multiple"]] = Field(
+        default_factory=lambda: ["single"],
+        description="Allowed question types",
+    )

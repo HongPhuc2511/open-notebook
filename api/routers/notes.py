@@ -1,10 +1,17 @@
+import json
 import re
 from typing import List, Literal, Optional
 
 from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
 
-from api.models import MindMapRequest, NoteCreate, NoteResponse, NoteUpdate
+from api.models import (
+    MindMapRequest,
+    NoteCreate,
+    NoteResponse,
+    NoteUpdate,
+    QuizRequest,
+)
 from open_notebook.domain.notebook import Note, Notebook, Source
 from open_notebook.exceptions import (
     InvalidInputError,
@@ -309,3 +316,185 @@ async def generate_mindmap(req: MindMapRequest):
         raise HTTPException(
             status_code=500, detail=f"Error generating mind map: {str(e)}"
         )
+
+
+QUIZ_MAX_CHARS = 80_000
+
+QUIZ_DIFFICULTY = {
+    "easy": "easy, direct recall of clearly stated facts",
+    "medium": "medium, understanding and connecting facts",
+    "hard": "hard, inference, comparison and subtle details",
+}
+
+QUIZ_SHAPE = (
+    '{"title": "...", "questions": [{"type": "single", "question": "...", '
+    '"options": ["...", "...", "...", "..."], "correct": [0], '
+    '"explanation": "..."}]}'
+)
+
+
+async def _load_sources_context(
+    notebook_id: str, source_ids: list[str] | None, max_chars: int
+) -> str:
+    notebook = await Notebook.get(notebook_id)
+
+    if source_ids:
+        sources = [await Source.get(sid) for sid in source_ids]
+    else:
+        sources = await notebook.get_sources(include_full_text=True)
+    sources = [s for s in sources if s.full_text and s.full_text.strip()]
+
+    if not sources:
+        raise HTTPException(
+            status_code=400, detail="No source content available for a quiz"
+        )
+
+    per_source = max_chars // len(sources)
+    return "\n\n".join(
+        f"## {s.title or 'Untitled'}\n\n{(s.full_text or '')[:per_source]}"
+        for s in sources
+    )
+
+
+def _build_quiz_prompt(req: QuizRequest) -> str:
+    lang = (req.language or "").strip()[:40]
+    if lang and lang.lower() != "auto":
+        language_rule = f"Write ALL text in {lang}, translating if needed."
+    else:
+        language_rule = "Write in the SAME language as the content."
+
+    types = set(req.question_types)
+    if types >= {"single", "multiple"}:
+        type_rule = (
+            'Mix questions with exactly one correct option ("single") and '
+            'questions with two or three correct options ("multiple").'
+        )
+    elif types == {"multiple"}:
+        type_rule = 'Every question has two or three correct options ("multiple").'
+    else:
+        type_rule = 'Every question has exactly one correct option ("single").'
+
+    lines = [
+        "Create a quiz from the content below.",
+        "Rules:",
+        f"- {language_rule}",
+        f"- Write exactly {req.question_count} questions. "
+        f"Difficulty: {QUIZ_DIFFICULTY[req.difficulty]}.",
+        f"- {type_rule}",
+        "- Every question has exactly 4 short options.",
+        "- Use only facts from the content.",
+        "- 'explanation' is one or two sentences saying why the answer is correct.",
+        "- 'correct' lists the zero-based indexes of the correct options.",
+        "- Output ONLY one JSON object, no code fences, no commentary, "
+        f"shaped like: {QUIZ_SHAPE}",
+    ]
+
+    focus = (req.topic or "").strip()[:500]
+    if focus:
+        lines.append(
+            "- The user asked for this focus; build the quiz around it "
+            f"(use only facts from the content): {focus}"
+        )
+    return "\n".join(lines)
+
+
+def _normalize_question(item: object) -> dict | None:
+    if not isinstance(item, dict):
+        return None
+
+    question = str(item.get("question") or "").strip()
+
+    raw_options = item.get("options")
+    if not isinstance(raw_options, list):
+        return None
+    options = [str(o).strip() for o in raw_options]
+    if len(options) < 2 or any(not o for o in options):
+        return None
+
+    raw_correct = item.get("correct")
+    if not isinstance(raw_correct, list):
+        return None
+    correct = sorted(
+        {i for i in raw_correct if isinstance(i, int) and 0 <= i < len(options)}
+    )
+
+    if not question or not correct:
+        return None
+
+    return {
+        "type": "multiple" if len(correct) > 1 else "single",
+        "question": question,
+        "options": options,
+        "correct": correct,
+        "explanation": str(item.get("explanation") or "").strip(),
+    }
+
+
+def _parse_quiz(text: str) -> dict | None:
+    raw = _clean_outline(text)
+    start, end = raw.find("{"), raw.rfind("}")
+    if start == -1 or end <= start:
+        return None
+
+    try:
+        data = json.loads(raw[start : end + 1])
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(data, dict) or not isinstance(data.get("questions"), list):
+        return None
+
+    questions = [
+        q for q in (_normalize_question(item) for item in data["questions"]) if q
+    ]
+    if not questions:
+        return None
+
+    return {"title": str(data.get("title") or "").strip(), "questions": questions}
+
+
+@router.post("/notes/quiz", response_model=NoteResponse)
+async def generate_quiz(req: QuizRequest):
+    """Generate a multiple-choice quiz (JSON) from sources and save it as a note."""
+    try:
+        from open_notebook.graphs.prompt import graph as prompt_graph
+
+        context = await _load_sources_context(
+            req.notebook_id, req.source_ids, QUIZ_MAX_CHARS
+        )
+
+        result = await prompt_graph.ainvoke(  # type: ignore[call-overload]
+            {"input_text": context, "prompt": _build_quiz_prompt(req)},
+            config={"configurable": {"model_id": req.model_id}},
+        )
+        quiz = _parse_quiz(result.get("output", ""))
+        if not quiz:
+            raise HTTPException(
+                status_code=502, detail="Model returned an invalid quiz"
+            )
+
+        title = quiz["title"] or "Quiz"
+        note = Note(
+            title=title,
+            content=json.dumps(quiz, ensure_ascii=False),
+            note_type="quiz",
+        )
+        await note.save()
+        await note.add_to_notebook(req.notebook_id)
+
+        return NoteResponse(
+            id=note.id or "",
+            title=note.title,
+            content=note.content,
+            note_type=note.note_type,
+            created=str(note.created),
+            updated=str(note.updated),
+        )
+    except HTTPException:
+        raise
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Notebook or source not found")
+    except OpenNotebookError:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating quiz: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error generating quiz: {str(e)}")
