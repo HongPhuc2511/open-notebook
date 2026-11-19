@@ -118,7 +118,7 @@ export function ChatPanel({
       <Button
         variant="ghost"
         size="icon"
-        className="h-9 w-9 rounded-full text-muted-foreground"
+        className="h-8 w-8 rounded-full bg-background/60 text-muted-foreground backdrop-blur hover:bg-muted"
         onClick={() => setSessionManagerOpen(true)}
         disabled={loadingSessions}
         title={t('chat.sessions')}
@@ -149,10 +149,13 @@ export function ChatPanel({
 
   return (
     <>
-    <Card className="flex flex-col h-full flex-1 overflow-hidden rounded-2xl bg-popover">
+    <Card className="relative flex flex-col h-full flex-1 overflow-hidden rounded-2xl bg-popover">
+      {sessionsControl && (
+        <div className="absolute right-3 top-2 z-10">{sessionsControl}</div>
+      )}
       <CardContent className="flex-1 flex flex-col min-h-0 p-0">
         <ScrollArea className="flex-1 min-h-0 px-4" ref={scrollAreaRef}>
-          <div className="space-y-4 pb-4 pt-3">
+          <div className="space-y-4 pb-4 pt-10">
             {messages.length === 0 ? (
               <div className="text-center text-muted-foreground py-8">
                 <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -215,14 +218,13 @@ export function ChatPanel({
 
         {/* Input Area */}
         <ChatComposer
-          leading={sessionsControl}
           contextChip={contextChip}
           onSendMessage={onSendMessage}
           isStreaming={isStreaming}
           modelOverride={modelOverride}
           onModelChange={onModelChange}
         />
-        <p className="order-3 px-4 pb-2 pt-1 text-center text-[11px] text-muted-foreground">
+        <p className="order-3 px-4 pb-1 pt-0.5 text-center text-[11px] text-muted-foreground">
             {t('chat.aiDisclaimer')}
         </p>
       </CardContent>
@@ -235,7 +237,6 @@ export function ChatPanel({
 // Composer owns the input state so keystrokes (including IME composition) only
 // re-render this small component instead of the whole message history.
 interface ChatComposerProps {
-  leading?: React.ReactNode
   contextChip?: React.ReactNode
   onSendMessage: (message: string, modelOverride?: string) => void
   isStreaming: boolean
@@ -244,7 +245,6 @@ interface ChatComposerProps {
 }
 
 function ChatComposer({
-  leading,
   contextChip,
   onSendMessage,
   isStreaming,
@@ -254,49 +254,38 @@ function ChatComposer({
   const { t } = useTranslation()
   const chatInputId = useId()
   const [input, setInput] = useState('')
+  const [multiline, setMultiline] = useState(false)
 
   const handleSend = () => {
     if (input.trim() && !isStreaming) {
       onSendMessage(input.trim(), modelOverride)
       setInput('')
+      setMultiline(false)
     }
   }
 
+  // Enter gửi, Shift+Enter xuống dòng (Ctrl/Cmd+Enter vẫn gửi được)
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Detect platform for correct modifier key
-    const isMac = typeof navigator !== 'undefined' && navigator.userAgent.toUpperCase().indexOf('MAC') >= 0
-    const isModifierPressed = isMac ? e.metaKey : e.ctrlKey
-
-    if (e.key === 'Enter' && isModifierPressed) {
-      e.preventDefault()
-      handleSend()
-    }
+    if (e.key !== 'Enter') return
+    // Đang gõ bằng IME (tiếng Việt, Nhật, Trung...) thì Enter chỉ để chốt chữ
+    if (e.nativeEvent.isComposing || e.keyCode === 229) return
+    if (e.shiftKey) return
+    e.preventDefault()
+    handleSend()
   }
-
-  // Detect platform for placeholder text
-  const isMac = typeof navigator !== 'undefined' && navigator.userAgent.toUpperCase().indexOf('MAC') >= 0
-  const keyHint = isMac ? '⌘+Enter' : 'Ctrl+Enter'
 
   return (
-    <div className="order-2 flex-shrink-0 px-4 pb-0 pt-2">
-      {/* One pill holds the input, the model picker and the send button */}
-      <div className="flex min-w-0 items-end gap-2 rounded-3xl border bg-background py-1.5 pl-3 pr-1.5 shadow-sm focus-within:border-primary/50">
-        {leading && <div className="shrink-0 self-center">{leading}</div>}
-        <Textarea
-          id={chatInputId}
-          name="chat-message"
-          autoComplete="off"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={`${t('chat.sendPlaceholder')} (${t('chat.pressToSend', { key: keyHint })})`}
-          disabled={isStreaming}
-          className="min-h-[40px] max-h-[100px] min-w-0 flex-1 resize-none border-0 bg-transparent px-2 py-2.5 shadow-none focus-visible:ring-0 dark:bg-transparent"
-          rows={1}
-        />
-        {contextChip && <div className="shrink-0 self-center">{contextChip}</div>}
+    <div className="order-2 flex-shrink-0 px-4 pb-1 pt-2">
+      {/* Một pill duy nhất: [model] [ô nhập] [số nguồn] [gửi] */}
+      <div
+        className={
+          'flex min-h-12 min-w-0 gap-1 border bg-background py-1.5 pr-1.5 shadow-sm focus-within:border-primary/50 ' +
+          (onModelChange ? 'pl-1.5 ' : 'pl-4 ') +
+          (multiline ? 'items-end rounded-3xl' : 'items-center rounded-full')
+        }
+      >
         {onModelChange && (
-          <div className="shrink-0 self-center" title={t('chat.model')}>
+          <div className="shrink-0">
             <ModelSelector
               currentModel={modelOverride}
               onModelChange={onModelChange}
@@ -304,11 +293,28 @@ function ChatComposer({
             />
           </div>
         )}
+        <Textarea
+          id={chatInputId}
+          name="chat-message"
+          autoComplete="off"
+          value={input}
+          onChange={(e) => {
+            setInput(e.target.value)
+            setMultiline(e.target.scrollHeight > 48)
+          }}
+          onKeyDown={handleKeyDown}
+          placeholder={t('chat.sendPlaceholder')}
+          title={t('chat.pressToSend', { key: 'Enter' })}
+          disabled={isStreaming}
+          className="min-h-9 max-h-[120px] min-w-0 flex-1 resize-none border-0 bg-transparent px-2 py-2 shadow-none focus-visible:ring-0 dark:bg-transparent"
+          rows={1}
+        />
+        {contextChip && <div className="flex h-9 shrink-0 items-center">{contextChip}</div>}
         <Button
           onClick={handleSend}
           disabled={!input.trim() || isStreaming}
           size="icon"
-          className="h-10 w-10 shrink-0 rounded-full"
+          className="h-9 w-9 shrink-0 rounded-full"
         >
           {isStreaming ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -428,34 +434,22 @@ function formatCompact(n: number): string {
   return String(n)
 }
 
-// Chip nhỏ trong thanh nhập liệu thay cho dòng "Context: ... tokens / ... chars"
+// Nhãn gọn "6 nguồn" cạnh nút gửi, chi tiết nằm trong tooltip
 function ContextChip({ stats }: { stats: NotebookContextStats }) {
-  const sources = stats.sourcesInsights + stats.sourcesFull
-  const hasContext = sources > 0 || stats.notesCount > 0
+  const { t } = useTranslation()
+  const total = stats.sourcesInsights + stats.sourcesFull + stats.notesCount
   const tokens = stats.tokenCount ?? 0
   const chars = stats.charCount ?? 0
 
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <button
-          type="button"
-          className="flex h-9 shrink-0 cursor-default items-center gap-2 rounded-full px-2.5 text-xs text-muted-foreground hover:bg-muted"
-        >
-          <span className="flex items-center gap-1">
-            <FileText className="h-3.5 w-3.5" />
-            {sources}
-          </span>
-          {stats.notesCount > 0 && (
-            <span className="flex items-center gap-1">
-              <StickyNote className="h-3.5 w-3.5" />
-              {stats.notesCount}
-            </span>
-          )}
-        </button>
+        <span className="cursor-default whitespace-nowrap px-1 text-xs text-muted-foreground/70">
+          {total} {t('navigation.sources').toLowerCase()}
+        </span>
       </TooltipTrigger>
       <TooltipContent side="top">
-        {hasContext ? (
+        {total > 0 ? (
           <div className="space-y-0.5 text-xs">
             {stats.sourcesInsights > 0 && (
               <p>Insights for {stats.sourcesInsights} source{stats.sourcesInsights !== 1 ? 's' : ''}</p>
