@@ -307,13 +307,9 @@ export default function NotebookPage() {
   const columnTransition = isDragging ? '' : 'transition-all duration-150'
 
   return (
-    <AppShell>
+    <AppShell topBarTitle={<NotebookHeader notebook={notebook} />}>
       <div className="flex flex-col flex-1 min-h-0">
-        <div className="flex-shrink-0 px-8 pt-1 pb-0">
-          <NotebookHeader notebook={notebook} />
-        </div>
-
-        <div className="flex-1 px-8 pb-4 pt-2 overflow-x-auto flex flex-col">
+        <div className="flex-1 px-3 pb-2 pt-0 overflow-x-auto flex flex-col">
           {/* Mobile: Tabbed interface - only render on mobile to avoid double-mounting */}
           {!isDesktop && (
             <>

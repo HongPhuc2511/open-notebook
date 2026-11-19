@@ -74,9 +74,11 @@ function LogoPebbles() {
 interface AppTopBarProps {
   // Optional page-specific controls (e.g. search, view toggle) shown before the create button
   actions?: React.ReactNode
+  // When set, replaces the app name and the main tabs (used by the notebook page)
+  title?: React.ReactNode
 }
 
-export function AppTopBar({ actions }: AppTopBarProps) {
+export function AppTopBar({ actions, title }: AppTopBarProps) {
   const { t, language, setLanguage } = useTranslation()
   const { theme, setTheme } = useTheme()
   const themeOptions = [
@@ -109,7 +111,12 @@ export function AppTopBar({ actions }: AppTopBarProps) {
   }
 
   return (
-    <header className="flex h-16 shrink-0 items-center gap-2 bg-background px-3 sm:px-6">
+    <header
+      className={cn(
+        'flex shrink-0 items-center gap-2 bg-background px-3 sm:px-6',
+        title ? 'h-14' : 'h-16'
+      )}
+    >
       {/* Small screens: all main tabs collapse into one menu */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -139,13 +146,18 @@ export function AppTopBar({ actions }: AppTopBarProps) {
         className="flex shrink-0 items-center gap-2.5 rounded-full px-2 py-1 outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <LogoPebbles />
-        <span className="hidden whitespace-nowrap text-xl font-normal tracking-tight sm:inline">
+        <span
+          className={cn(
+            'hidden whitespace-nowrap text-xl font-normal tracking-tight',
+            !title && 'sm:inline'
+          )}
+        >
           {t('common.appName')}
         </span>
       </Link>
 
       {/* Pill tabs, active one is filled */}
-      <nav className="ml-4 hidden items-center gap-1 md:flex">
+      <nav className={cn('ml-4 hidden items-center gap-1', !title && 'md:flex')}>
         {tabs.map((tab) => {
           const active = isActive(tab.href)
           return (
@@ -166,7 +178,11 @@ export function AppTopBar({ actions }: AppTopBarProps) {
         })}
       </nav>
 
-      <div className="flex-1" />
+      {title ? (
+        <div className="ml-1 flex min-w-0 flex-1 items-center">{title}</div>
+      ) : (
+        <div className="flex-1" />
+      )}
       {actions}
 
       {/* Global create menu, same targets as the old sidebar button */}

@@ -10,12 +10,14 @@ interface AppShellProps {
   hideSidebar?: boolean
   // Page-specific controls rendered inside the top bar (e.g. search, view toggle)
   topBarActions?: React.ReactNode
+  // Replaces the app name and the navigation tabs in the top bar
+  topBarTitle?: React.ReactNode
 }
 
-export function AppShell({ children, hideSidebar = false, topBarActions }: AppShellProps) {
+export function AppShell({ children, hideSidebar = false, topBarActions, topBarTitle }: AppShellProps) {
   return (
     <div className="flex h-screen flex-col overflow-hidden">
-      {!hideSidebar && <AppTopBar actions={topBarActions} />}
+      {!hideSidebar && <AppTopBar actions={topBarActions} title={topBarTitle} />}
       <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
         <SetupBanner />
         {children}
