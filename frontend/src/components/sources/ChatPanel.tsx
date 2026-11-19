@@ -154,7 +154,7 @@ export function ChatPanel({
         <div className="absolute right-3 top-2 z-10">{sessionsControl}</div>
       )}
       <CardContent className="flex-1 flex flex-col min-h-0 p-0">
-        <ScrollArea className="flex-1 min-h-0 px-4" ref={scrollAreaRef}>
+        <ScrollArea className="flex-1 min-h-0 px-3" ref={scrollAreaRef}>
           <div className="space-y-4 pb-4 pt-10">
             {messages.length === 0 ? (
               <div className="text-center text-muted-foreground py-8">
@@ -275,7 +275,7 @@ function ChatComposer({
   }
 
   return (
-    <div className="order-2 flex-shrink-0 px-4 pb-1 pt-2">
+    <div className="order-2 flex-shrink-0 px-3 pb-1 pt-2">
       {/* Một pill duy nhất: [model] [ô nhập] [số nguồn] [gửi] */}
       <div
         className={
@@ -353,9 +353,13 @@ const ChatMessage = memo(function ChatMessage({
           </div>
         </div>
       )}
-      <div className="flex flex-col gap-2 max-w-[80%]">
+      <div
+        className={`flex min-w-0 flex-col gap-2 ${
+          message.type === 'human' ? 'max-w-[80%]' : 'flex-1'
+        }`}
+      >
         <div
-          className={`rounded-2xl px-4 py-2 ${
+          className={`rounded-2xl py-2 ${message.type === 'human' ? 'px-4' : 'px-1'} ${
               message.type === 'human'
                 ? 'bg-muted'
                 : 'bg-transparent'

@@ -82,9 +82,9 @@ export function SourcesColumn({
 }: SourcesColumnProps) {
   const { t } = useTranslation()
 
-  // Mind maps live in Studio, so keep them out of the Notes group
+  // Generated outputs (mind maps, quizzes) live in Studio, so keep them out of the Notes group
   const notes = useMemo(
-    () => allNotes?.filter((n) => (n.note_type as string | undefined) !== 'mindmap'),
+    () => allNotes?.filter((n) => !['mindmap', 'quiz'].includes(n.note_type ?? '')),
     [allNotes]
   )
   const [dropdownOpen, setDropdownOpen] = useState(false)

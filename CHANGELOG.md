@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Quiz generation in Studio.** Generate a multiple-choice quiz from your sources with `POST /api/notes/quiz`, choosing question count, difficulty, question types, language, sources and topic, then take it question by question with instant feedback and a final score
+
 ## [1.15.1] - 2026-11-03
 
 ### Changed
