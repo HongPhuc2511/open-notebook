@@ -860,3 +860,21 @@ class QuizRequest(BaseModel):
         default_factory=lambda: ["single"],
         description="Allowed question types",
     )
+
+
+class FlashcardsRequest(BaseModel):
+    notebook_id: str = Field(..., description="Notebook to build the flashcards for")
+    source_ids: list[str] | None = Field(
+        None, description="Sources to use; defaults to all sources in the notebook"
+    )
+    model_id: str | None = Field(None, description="Override the LLM model")
+    language: str | None = Field(
+        None, description="Language for the cards; empty or 'auto' = same as sources"
+    )
+    topic: str | None = Field(
+        None, description="Optional focus the user wants the cards to center on"
+    )
+    card_count: int = Field(20, ge=1, le=50, description="Number of cards")
+    difficulty: Literal["easy", "medium", "hard"] = Field(
+        "medium", description="Card difficulty"
+    )
