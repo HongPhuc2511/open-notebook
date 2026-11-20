@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
-import { ClipboardList, Layers, MoreVertical, Network, Sparkles, Trash2 } from 'lucide-react'
+import { ClipboardList, Layers, MoreVertical, Network, Pencil, Sparkles, Trash2 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { NoteResponse, SourceListResponse } from '@/lib/types/api'
@@ -14,7 +14,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Checkbox } from '@/components/ui/checkbox'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { CollapsibleColumn, createCollapseButton } from '@/components/notebooks/CollapsibleColumn'
@@ -22,7 +21,8 @@ import { MindMapDialog } from '@/components/notebooks/MindMapDialog'
 import { MindMapConfigDialog, type MindMapConfigValues } from '@/components/notebooks/MindMapConfigDialog'
 import { useNotebookColumnsStore } from '@/lib/stores/notebook-columns-store'
 import { useTranslation } from '@/lib/hooks/use-translation'
-import { useDeleteNote } from '@/lib/hooks/use-notes'
+import { useDeleteNote, useUpdateNote } from '@/lib/hooks/use-notes'
+import { RenameOutputDialog } from '@/components/notebooks/RenameOutputDialog'
 import { useGenerateMindMap } from '@/lib/hooks/use-mindmap'
 import { mindmapApi } from '@/lib/api/mindmap'
 import { quizApi, parseQuiz, type QuizData } from '@/lib/api/quiz'
@@ -90,8 +90,6 @@ export function StudioColumn({
   notes,
   isLoading,
   notebookId,
-  contextSelections,
-  onContextModeChange,
 }: StudioColumnProps) {
   const { t, language } = useTranslation()
   const tr = (vi: string, en: string) => (language?.startsWith('vi') ? vi : en)
@@ -117,11 +115,13 @@ export function StudioColumn({
   const [quiz, setQuiz] = useState<{ title?: string | null; data: QuizData } | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null)
+  const [noteToRename, setNoteToRename] = useState<NoteResponse | null>(null)
 
   const generateMindMap = useGenerateMindMap()
   const generateQuiz = useGenerateQuiz()
   const generateFlashcards = useGenerateFlashcards()
   const deleteNote = useDeleteNote()
+  const updateNote = useUpdateNote()
 
   // Only generated outputs live in Studio; regular notes are in the Sources column
   const outputs = useMemo(
@@ -259,6 +259,16 @@ export function StudioColumn({
     if (kind === 'quiz') return handleOpenQuiz(note)
     if (kind === 'flashcards') return handleOpenFlashcards(note)
     return handleOpenMindMap(note)
+  }
+
+  const handleRenameSubmit = async (title: string) => {
+    if (!noteToRename) return
+    try {
+      await updateNote.mutateAsync({ id: noteToRename.id, data: { title } })
+      setNoteToRename(null)
+    } catch {
+      // error toast is shown by the hook
+    }
   }
 
   const handleDeleteConfirm = async () => {
@@ -411,6 +421,15 @@ export function StudioColumn({
                           <DropdownMenuItem
                             onClick={(e) => {
                               e.stopPropagation()
+                              setNoteToRename(note)
+                            }}
+                          >
+                            <Pencil className="mr-2 h-4 w-4" />
+                            {tr('Đổi tên', 'Rename')}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation()
                               setNoteToDelete(note.id)
                               setDeleteDialogOpen(true)
                             }}
@@ -422,14 +441,6 @@ export function StudioColumn({
                         </DropdownMenuContent>
                       </DropdownMenu>
 
-                      {onContextModeChange && contextSelections?.[note.id] && (
-                        <Checkbox
-                          checked={contextSelections[note.id] !== 'off'}
-                          onCheckedChange={(checked) => onContextModeChange(note.id, checked ? 'full' : 'off')}
-                          onClick={(e) => e.stopPropagation()}
-                          aria-label="Include in chat context"
-                        />
-                      )}
                     </div>
                   )
                 })}
@@ -494,6 +505,16 @@ export function StudioColumn({
         onOpenChange={setFlashOpen}
         title={flash?.title}
         data={flash?.data ?? null}
+      />
+
+      <RenameOutputDialog
+        open={noteToRename !== null}
+        onOpenChange={(open) => {
+          if (!open) setNoteToRename(null)
+        }}
+        initialTitle={noteToRename?.title ?? ''}
+        isSaving={updateNote.isPending}
+        onSubmit={handleRenameSubmit}
       />
 
       <ConfirmDialog

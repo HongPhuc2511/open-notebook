@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Quiz generation in Studio.** Generate a multiple-choice quiz from your sources with `POST /api/notes/quiz`, choosing question count, difficulty, question types, language, sources and topic, then take it question by question with instant feedback and a final score
 - **Flashcards in Studio.** Generate a deck of study flashcards from your sources with `POST /api/notes/flashcards`, choosing card count, difficulty, language, sources and topic, then flip through the cards and mark the ones you know
 - **Topic guard in Studio.** Mind map, quiz and flashcard requests whose topic touches war, military or politically sensitive subjects are refused with a clear message, and the generation prompts tell the model to skip such material. The guard follows the same `OPEN_NOTEBOOK_TOPIC_GUARD` and `OPEN_NOTEBOOK_BLOCKED_TOPICS` settings as chat
+- **Rename Studio outputs.** Mind maps, quizzes and flashcards can be renamed from their menu in Studio, and notes and sources can be renamed from the Sources column
 
 ## [1.15.1] - 2026-11-03
 
