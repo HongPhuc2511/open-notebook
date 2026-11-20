@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
 
 from api.models import (
+    FlashcardsRequest,
     MindMapRequest,
     NoteCreate,
     NoteResponse,
@@ -18,6 +19,7 @@ from open_notebook.exceptions import (
     NotFoundError,
     OpenNotebookError,
 )
+from open_notebook.utils.topic_guard import REFUSAL_VI, check_message
 
 router = APIRouter()
 
@@ -214,6 +216,31 @@ async def delete_note(note_id: str):
         raise HTTPException(status_code=500, detail=f"Error deleting note: {str(e)}")
 
 
+STUDIO_SAFETY_RULE = (
+    "- Do not create content about war, military topics, weapons or politically "
+    "sensitive issues. Skip those parts of the content and cover everything else."
+)
+
+STUDIO_REFUSAL_VI = (
+    "Xin lỗi, mình không thể tạo nội dung về chiến tranh, quân sự hoặc các vấn đề "
+    "chính trị nhạy cảm. Bạn hãy chọn chủ đề khác nhé."
+)
+STUDIO_REFUSAL_EN = (
+    "Sorry, I can't create content about war, military topics or politically "
+    "sensitive issues. Please pick a different topic."
+)
+
+
+def _guard_topic(topic: str | None) -> None:
+    """Refuse Studio requests whose topic hits the same blocklist the chat uses."""
+    refusal = check_message(topic or "")
+    if refusal:
+        raise HTTPException(
+            status_code=400,
+            detail=STUDIO_REFUSAL_VI if refusal == REFUSAL_VI else STUDIO_REFUSAL_EN,
+        )
+
+
 MINDMAP_PROMPT = """Create a mind map of the content below as a Markdown outline.
 Rules:
 - Write in the SAME language as the content.
@@ -249,6 +276,7 @@ def _build_mindmap_prompt(language: str | None, topic: str | None) -> str:
             "\n- The user asked for this focus; build the mind map around it "
             f"(use only facts from the content): {focus}"
         )
+    prompt += "\n" + STUDIO_SAFETY_RULE
     return prompt
 
 
@@ -257,6 +285,8 @@ async def generate_mindmap(req: MindMapRequest):
     """Generate a mind map (Markdown outline) from sources and save it as a note."""
     try:
         from open_notebook.graphs.prompt import graph as prompt_graph
+
+        _guard_topic(req.topic)
 
         notebook = await Notebook.get(req.notebook_id)
 
@@ -346,7 +376,7 @@ async def _load_sources_context(
 
     if not sources:
         raise HTTPException(
-            status_code=400, detail="No source content available for a quiz"
+            status_code=400, detail="No source content available"
         )
 
     per_source = max_chars // len(sources)
@@ -395,6 +425,7 @@ def _build_quiz_prompt(req: QuizRequest) -> str:
             "- The user asked for this focus; build the quiz around it "
             f"(use only facts from the content): {focus}"
         )
+    lines.append(STUDIO_SAFETY_RULE)
     return "\n".join(lines)
 
 
@@ -458,6 +489,8 @@ async def generate_quiz(req: QuizRequest):
     try:
         from open_notebook.graphs.prompt import graph as prompt_graph
 
+        _guard_topic(req.topic)
+
         context = await _load_sources_context(
             req.notebook_id, req.source_ids, QUIZ_MAX_CHARS
         )
@@ -498,3 +531,118 @@ async def generate_quiz(req: QuizRequest):
     except Exception as e:
         logger.error(f"Error generating quiz: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error generating quiz: {str(e)}")
+
+
+FLASHCARDS_MAX_CHARS = 80_000
+
+FLASHCARDS_SHAPE = '{"title": "...", "cards": [{"front": "...", "back": "..."}]}'
+
+
+def _build_flashcards_prompt(req: FlashcardsRequest) -> str:
+    lang = (req.language or "").strip()[:40]
+    if lang and lang.lower() != "auto":
+        language_rule = f"Write ALL text in {lang}, translating if needed."
+    else:
+        language_rule = "Write in the SAME language as the content."
+
+    lines = [
+        "Create study flashcards from the content below.",
+        "Rules:",
+        f"- {language_rule}",
+        f"- Write exactly {req.card_count} cards. "
+        f"Difficulty: {QUIZ_DIFFICULTY[req.difficulty]}.",
+        "- 'front' is a short question or term. 'back' is a concise answer "
+        "of at most two sentences.",
+        "- Each card tests one fact. No duplicate cards.",
+        "- Use only facts from the content.",
+        "- Output ONLY one JSON object, no code fences, no commentary, "
+        f"shaped like: {FLASHCARDS_SHAPE}",
+    ]
+
+    focus = (req.topic or "").strip()[:500]
+    if focus:
+        lines.append(
+            "- The user asked for this focus; build the cards around it "
+            f"(use only facts from the content): {focus}"
+        )
+    lines.append(STUDIO_SAFETY_RULE)
+    return "\n".join(lines)
+
+
+def _parse_flashcards(text: str) -> dict | None:
+    raw = _clean_outline(text)
+    start, end = raw.find("{"), raw.rfind("}")
+    if start == -1 or end <= start:
+        return None
+
+    try:
+        data = json.loads(raw[start : end + 1])
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(data, dict) or not isinstance(data.get("cards"), list):
+        return None
+
+    cards = []
+    for item in data["cards"]:
+        if not isinstance(item, dict):
+            continue
+        front = str(item.get("front") or "").strip()
+        back = str(item.get("back") or "").strip()
+        if front and back:
+            cards.append({"front": front, "back": back})
+    if not cards:
+        return None
+
+    return {"title": str(data.get("title") or "").strip(), "cards": cards}
+
+
+@router.post("/notes/flashcards", response_model=NoteResponse)
+async def generate_flashcards(req: FlashcardsRequest):
+    """Generate flashcards (JSON) from sources and save them as a note."""
+    try:
+        from open_notebook.graphs.prompt import graph as prompt_graph
+
+        _guard_topic(req.topic)
+
+        context = await _load_sources_context(
+            req.notebook_id, req.source_ids, FLASHCARDS_MAX_CHARS
+        )
+
+        result = await prompt_graph.ainvoke(  # type: ignore[call-overload]
+            {"input_text": context, "prompt": _build_flashcards_prompt(req)},
+            config={"configurable": {"model_id": req.model_id}},
+        )
+        deck = _parse_flashcards(result.get("output", ""))
+        if not deck:
+            raise HTTPException(
+                status_code=502, detail="Model returned invalid flashcards"
+            )
+
+        title = deck["title"] or "Flashcards"
+        note = Note(
+            title=title,
+            content=json.dumps(deck, ensure_ascii=False),
+            note_type="flashcards",
+        )
+        await note.save()
+        await note.add_to_notebook(req.notebook_id)
+
+        return NoteResponse(
+            id=note.id or "",
+            title=note.title,
+            content=note.content,
+            note_type=note.note_type,
+            created=str(note.created),
+            updated=str(note.updated),
+        )
+    except HTTPException:
+        raise
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Notebook or source not found")
+    except OpenNotebookError:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating flashcards: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error generating flashcards: {str(e)}"
+        )

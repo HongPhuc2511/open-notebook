@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
-import { ClipboardList, MoreVertical, Network, Sparkles, Trash2 } from 'lucide-react'
+import { ClipboardList, Layers, MoreVertical, Network, Sparkles, Trash2 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { NoteResponse, SourceListResponse } from '@/lib/types/api'
@@ -29,6 +29,13 @@ import { quizApi, parseQuiz, type QuizData } from '@/lib/api/quiz'
 import { useGenerateQuiz } from '@/lib/hooks/use-quiz'
 import { QuizDialog } from '@/components/notebooks/QuizDialog'
 import { QuizConfigDialog, type QuizConfigValues } from '@/components/notebooks/QuizConfigDialog'
+import { flashcardsApi, parseFlashcards, type FlashcardsData } from '@/lib/api/flashcards'
+import { useGenerateFlashcards } from '@/lib/hooks/use-flashcards'
+import { FlashcardsDialog } from '@/components/notebooks/FlashcardsDialog'
+import {
+  FlashcardsConfigDialog,
+  type FlashcardsConfigValues,
+} from '@/components/notebooks/FlashcardsConfigDialog'
 import { getDateLocale } from '@/lib/utils/date-locale'
 import type { ContextMode, NoteContextMode } from '../[id]/page'
 import type { NoteContextDefault } from '@/lib/utils/source-context'
@@ -52,11 +59,12 @@ interface StudioTool {
   onClick: () => void
 }
 
-type OutputKind = 'mindmap' | 'quiz'
+type OutputKind = 'mindmap' | 'quiz' | 'flashcards'
 
 const outputKind = (note: NoteResponse): OutputKind | null => {
   if (note.note_type === 'mindmap') return 'mindmap'
   if (note.note_type === 'quiz') return 'quiz'
+  if (note.note_type === 'flashcards') return 'flashcards'
   return null
 }
 
@@ -90,6 +98,7 @@ export function StudioColumn({
   const studioLabel = t('notebooks.studioTitle')
   const mindMapLabel = tr('Sơ đồ tư duy', 'Mind map')
   const quizLabel = tr('Bài kiểm tra', 'Quiz')
+  const flashcardsLabel = tr('Thẻ ghi nhớ', 'Flashcards')
 
   const { notesCollapsed, toggleNotes } = useNotebookColumnsStore()
   const collapseButton = useMemo(
@@ -100,6 +109,9 @@ export function StudioColumn({
   const [configOpen, setConfigOpen] = useState(false)
   const [mindMapOpen, setMindMapOpen] = useState(false)
   const [mindMap, setMindMap] = useState<{ title?: string | null; markdown: string } | null>(null)
+  const [flashConfigOpen, setFlashConfigOpen] = useState(false)
+  const [flashOpen, setFlashOpen] = useState(false)
+  const [flash, setFlash] = useState<{ title?: string | null; data: FlashcardsData } | null>(null)
   const [quizConfigOpen, setQuizConfigOpen] = useState(false)
   const [quizOpen, setQuizOpen] = useState(false)
   const [quiz, setQuiz] = useState<{ title?: string | null; data: QuizData } | null>(null)
@@ -108,6 +120,7 @@ export function StudioColumn({
 
   const generateMindMap = useGenerateMindMap()
   const generateQuiz = useGenerateQuiz()
+  const generateFlashcards = useGenerateFlashcards()
   const deleteNote = useDeleteNote()
 
   // Only generated outputs live in Studio; regular notes are in the Sources column
@@ -202,8 +215,51 @@ export function StudioColumn({
     }
   }
 
-  const handleOpenOutput = (note: NoteResponse, kind: OutputKind) =>
-    kind === 'quiz' ? handleOpenQuiz(note) : handleOpenMindMap(note)
+  const showFlashcards = (title: string | null, content: string | null) => {
+    const data = parseFlashcards(content)
+    if (!data) {
+      toast.error(tr('Không mở được thẻ ghi nhớ', 'Failed to open flashcards'))
+      return
+    }
+    setFlash({ title, data })
+    setFlashOpen(true)
+  }
+
+  const handleSubmitFlashConfig = async (values: FlashcardsConfigValues) => {
+    setFlashConfigOpen(false)
+    try {
+      const note = await generateFlashcards.mutateAsync({
+        notebookId,
+        sourceIds: values.sourceIds,
+        language: values.language,
+        topic: values.topic,
+        cardCount: values.cardCount,
+        difficulty: values.difficulty,
+      })
+      if (values.openWhenDone) {
+        showFlashcards(note.title, note.content)
+      } else {
+        toast.success(tr('Thẻ ghi nhớ đã sẵn sàng trong Studio', 'Your flashcards are ready in Studio'))
+      }
+    } catch {
+      // error toast is shown by the hook
+    }
+  }
+
+  const handleOpenFlashcards = async (note: NoteResponse) => {
+    try {
+      const full = await flashcardsApi.get(note.id)
+      showFlashcards(full.title, full.content)
+    } catch {
+      toast.error(tr('Không mở được thẻ ghi nhớ', 'Failed to open flashcards'))
+    }
+  }
+
+  const handleOpenOutput = (note: NoteResponse, kind: OutputKind) => {
+    if (kind === 'quiz') return handleOpenQuiz(note)
+    if (kind === 'flashcards') return handleOpenFlashcards(note)
+    return handleOpenMindMap(note)
+  }
 
   const handleDeleteConfirm = async () => {
     if (!noteToDelete) return
@@ -230,6 +286,13 @@ export function StudioColumn({
       icon: ClipboardList,
       busy: generateQuiz.isPending,
       onClick: () => setQuizConfigOpen(true),
+    },
+    {
+      id: 'flashcards',
+      label: flashcardsLabel,
+      icon: Layers,
+      busy: generateFlashcards.isPending,
+      onClick: () => setFlashConfigOpen(true),
     },
   ]
 
@@ -298,9 +361,19 @@ export function StudioColumn({
                   />
                 )}
 
+                {generateFlashcards.isPending && (
+                  <PendingRow
+                    icon={Layers}
+                    title={tr('Đang tạo thẻ ghi nhớ...', 'Generating flashcards...')}
+                    hint={tr('Có thể mất đến một phút', 'This can take up to a minute')}
+                  />
+                )}
+
                 {outputs.map(({ note, kind }) => {
-                  const OutputIcon = kind === 'quiz' ? ClipboardList : Network
-                  const kindLabel = kind === 'quiz' ? quizLabel : mindMapLabel
+                  const OutputIcon =
+                    kind === 'quiz' ? ClipboardList : kind === 'flashcards' ? Layers : Network
+                  const kindLabel =
+                    kind === 'quiz' ? quizLabel : kind === 'flashcards' ? flashcardsLabel : mindMapLabel
                   return (
                     <div
                       key={note.id}
@@ -361,7 +434,10 @@ export function StudioColumn({
                   )
                 })}
 
-                {outputs.length === 0 && !generateMindMap.isPending && !generateQuiz.isPending && (
+                {outputs.length === 0 &&
+                  !generateMindMap.isPending &&
+                  !generateQuiz.isPending &&
+                  !generateFlashcards.isPending && (
                   <p className="px-1 pt-2 text-xs text-muted-foreground">
                     {tr(
                       'Kết quả bạn tạo trong Studio sẽ được lưu ở đây. Chọn một công cụ ở trên để bắt đầu.',
@@ -403,6 +479,21 @@ export function StudioColumn({
         onOpenChange={setQuizOpen}
         title={quiz?.title}
         quiz={quiz?.data ?? null}
+      />
+
+      <FlashcardsConfigDialog
+        open={flashConfigOpen}
+        onOpenChange={setFlashConfigOpen}
+        sources={configSources}
+        defaultSelectedIds={defaultSelectedIds}
+        onSubmit={handleSubmitFlashConfig}
+      />
+
+      <FlashcardsDialog
+        open={flashOpen}
+        onOpenChange={setFlashOpen}
+        title={flash?.title}
+        data={flash?.data ?? null}
       />
 
       <ConfirmDialog

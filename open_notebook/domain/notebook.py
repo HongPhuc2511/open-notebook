@@ -691,7 +691,7 @@ class Source(ObjectModel):
 class Note(ObjectModel):
     table_name: ClassVar[str] = "note"
     title: Optional[str] = None
-    note_type: Optional[Literal["human", "ai", "mindmap", "quiz"]] = None
+    note_type: Optional[Literal["human", "ai", "mindmap", "quiz", "flashcards"]] = None
     content: Optional[str] = None
 
     @field_validator("content")
