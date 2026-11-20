@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
+  Pencil,
   Plus,
   FileText,
   Link2,
@@ -31,8 +32,13 @@ import { EmptyState } from '@/components/common/EmptyState'
 import { AddSourceDialog } from '@/components/sources/AddSourceDialog'
 import { AddExistingSourceDialog } from '@/components/sources/AddExistingSourceDialog'
 import { SourceCard } from '@/components/sources/SourceCard'
-import { useDeleteSource, useRetrySource, useRemoveSourceFromNotebook } from '@/lib/hooks/use-sources'
-import { useDeleteNote } from '@/lib/hooks/use-notes'
+import {
+  useDeleteSource,
+  useRetrySource,
+  useRemoveSourceFromNotebook,
+  useUpdateSource,
+} from '@/lib/hooks/use-sources'
+import { useDeleteNote, useUpdateNote } from '@/lib/hooks/use-notes'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
 import { ContextMode } from '../[id]/page'
@@ -43,6 +49,7 @@ import { useNotebookColumnsStore } from '@/lib/stores/notebook-columns-store'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { Checkbox } from '@/components/ui/checkbox'
 import { NoteEditorDialog } from './NoteEditorDialog'
+import { RenameOutputDialog } from '@/components/notebooks/RenameOutputDialog'
 
 interface SourcesColumnProps {
   sources?: SourceListResponse[]
@@ -80,7 +87,8 @@ export function SourcesColumn({
   isFetchingNextPage,
   fetchNextPage,
 }: SourcesColumnProps) {
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
+  const tr = (vi: string, en: string) => (language?.startsWith('vi') ? vi : en)
 
   // Generated outputs (mind maps, quizzes) live in Studio, so keep them out of the Notes group
   const notes = useMemo(
@@ -99,6 +107,8 @@ export function SourcesColumn({
   const [editingNote, setEditingNote] = useState<NoteResponse | undefined>()
   const [noteDeleteDialogOpen, setNoteDeleteDialogOpen] = useState(false)
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null)
+  const [sourceToRename, setSourceToRename] = useState<SourceListResponse | null>(null)
+  const [noteToRename, setNoteToRename] = useState<NoteResponse | null>(null)
   const [notesOpen, setNotesOpen] = useState(true)
 
   const { openModal } = useModalManager()
@@ -106,6 +116,8 @@ export function SourcesColumn({
   const retrySource = useRetrySource()
   const removeFromNotebook = useRemoveSourceFromNotebook()
   const deleteNote = useDeleteNote()
+  const updateSource = useUpdateSource()
+  const updateNote = useUpdateNote()
 
   const { sourcesCollapsed, toggleSources } = useNotebookColumnsStore()
   const sourcesLabel = t('navigation.sources')
@@ -201,6 +213,26 @@ export function SourcesColumn({
   const handleOpenEditor = (note?: NoteResponse) => {
     setEditingNote(note)
     setEditorOpen(true)
+  }
+
+  const handleNoteRenameSubmit = async (title: string) => {
+    if (!noteToRename) return
+    try {
+      await updateNote.mutateAsync({ id: noteToRename.id, data: { title } })
+      setNoteToRename(null)
+    } catch {
+      // error toast is shown by the hook
+    }
+  }
+
+  const handleSourceRenameSubmit = async (title: string) => {
+    if (!sourceToRename) return
+    try {
+      await updateSource.mutateAsync({ id: sourceToRename.id, data: { title } })
+      setSourceToRename(null)
+    } catch {
+      // error toast is shown by the hook
+    }
   }
 
   const handleNoteDeleteClick = (noteId: string) => {
@@ -360,6 +392,15 @@ export function SourcesColumn({
                               <DropdownMenuItem
                                 onClick={(e) => {
                                   e.stopPropagation()
+                                  setNoteToRename(note)
+                                }}
+                              >
+                                <Pencil className="mr-2 h-4 w-4" />
+                                {tr('Đổi tên', 'Rename')}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation()
                                   handleNoteDeleteClick(note.id)
                                 }}
                                 className="text-destructive focus:text-destructive"
@@ -383,7 +424,7 @@ export function SourcesColumn({
                 )}
 
                 {sources?.map((source) => (
-                  <SourceCard
+                  <SourceCard onRename={setSourceToRename}
                     key={source.id}
                     source={source}
                     onClick={handleSourceClick}
@@ -423,6 +464,26 @@ export function SourcesColumn({
         onOpenChange={setAddExistingDialogOpen}
         notebookId={notebookId}
         onSuccess={onRefresh}
+      />
+
+      <RenameOutputDialog
+        open={noteToRename !== null}
+        onOpenChange={(open) => {
+          if (!open) setNoteToRename(null)
+        }}
+        initialTitle={noteToRename?.title ?? ''}
+        isSaving={updateNote.isPending}
+        onSubmit={handleNoteRenameSubmit}
+      />
+
+      <RenameOutputDialog
+        open={sourceToRename !== null}
+        onOpenChange={(open) => {
+          if (!open) setSourceToRename(null)
+        }}
+        initialTitle={sourceToRename?.title ?? ''}
+        isSaving={updateSource.isPending}
+        onSubmit={handleSourceRenameSubmit}
       />
 
       <NoteEditorDialog

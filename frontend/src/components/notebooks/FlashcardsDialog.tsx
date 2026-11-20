@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, Check, Layers, RotateCw, X } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { cn } from '@/lib/utils'
 import type { Flashcard, FlashcardsData } from '@/lib/api/flashcards'
 
 interface FlashcardsDialogProps {
@@ -119,8 +120,9 @@ function FlashcardsSession({ cards, onClose }: { cards: Flashcard[]; onClose: ()
 
   if (!card) return null
 
-  const faceClass =
-    'absolute inset-0 flex flex-col justify-between rounded-2xl border px-6 py-5 shadow-sm'
+  const remaining = total - index
+  const faceClass = 'absolute inset-0 rounded-2xl border bg-card shadow-md'
+  const faceInner = 'flex h-full flex-col justify-between rounded-2xl px-6 py-5'
 
   return (
     <div className="min-w-0 space-y-4">
@@ -136,43 +138,54 @@ function FlashcardsSession({ cards, onClose }: { cards: Flashcard[]; onClose: ()
         </div>
       </div>
 
-      <div style={{ perspective: 1200 }}>
-        <div
-          role="button"
-          tabIndex={0}
-          aria-label={flipped ? tr('Xem câu hỏi', 'See question') : tr('Xem câu trả lời', 'See answer')}
-          onClick={() => setFlipped((f) => !f)}
-          className="relative h-80 w-full cursor-pointer select-none transition-transform duration-500 ease-out motion-reduce:transition-none"
-          style={{
-            transformStyle: 'preserve-3d',
-            transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
-          }}
-        >
-          {/* Front */}
-          <div className={`${faceClass} bg-muted`} style={{ backfaceVisibility: 'hidden' }}>
-            <span className="text-xs text-muted-foreground">{tr('Câu hỏi', 'Question')}</span>
-            <span className="max-h-48 overflow-y-auto break-words text-center text-xl font-medium leading-relaxed">
-              {card.front}
-            </span>
-            <span className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-              <RotateCw className="h-3.5 w-3.5" />
-              {tr('Xem câu trả lời', 'See answer')}
-            </span>
-          </div>
+      {/* Card stack: panel, up to two cards peeking out behind, then the flipping card */}
+      <div className="rounded-3xl bg-muted/50 p-4 pb-7">
+        <div className="relative" style={{ perspective: 1200 }}>
+          {remaining > 2 && (
+            <div aria-hidden className="absolute inset-x-8 top-4 h-80 rounded-2xl border bg-card opacity-60" />
+          )}
+          {remaining > 1 && (
+            <div aria-hidden className="absolute inset-x-4 top-2 h-80 rounded-2xl border bg-card opacity-80 shadow-sm" />
+          )}
 
-          {/* Back */}
           <div
-            className={`${faceClass} bg-teal-tint`}
-            style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+            role="button"
+            tabIndex={0}
+            aria-label={flipped ? tr('Xem câu hỏi', 'See question') : tr('Xem câu trả lời', 'See answer')}
+            onClick={() => setFlipped((f) => !f)}
+            className="relative h-80 w-full cursor-pointer select-none transition-transform duration-500 ease-out motion-reduce:transition-none"
+            style={{
+              transformStyle: 'preserve-3d',
+              transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+            }}
           >
-            <span className="text-xs text-muted-foreground">{tr('Đáp án', 'Answer')}</span>
-            <span className="max-h-48 overflow-y-auto break-words text-center text-lg leading-relaxed">
-              {card.back}
-            </span>
-            <span className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-              <RotateCw className="h-3.5 w-3.5" />
-              {tr('Xem câu hỏi', 'See question')}
-            </span>
+            {/* Front */}
+            <div className={faceClass} style={{ backfaceVisibility: 'hidden' }}>
+              <div className={faceInner}>
+                <span className="text-xs text-muted-foreground">{tr('Câu hỏi', 'Question')}</span>
+                <span className="max-h-48 overflow-y-auto break-words text-center text-xl font-medium leading-relaxed">
+                  {card.front}
+                </span>
+                <span className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+                  <RotateCw className="h-3.5 w-3.5" />
+                  {tr('Xem câu trả lời', 'See answer')}
+                </span>
+              </div>
+            </div>
+
+            {/* Back: solid card underneath, tint on top, so the stack never shows through */}
+            <div className={faceClass} style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
+              <div className={cn(faceInner, 'bg-teal-tint')}>
+                <span className="text-xs text-muted-foreground">{tr('Đáp án', 'Answer')}</span>
+                <span className="max-h-48 overflow-y-auto break-words text-center text-lg leading-relaxed">
+                  {card.back}
+                </span>
+                <span className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+                  <RotateCw className="h-3.5 w-3.5" />
+                  {tr('Xem câu hỏi', 'See question')}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -188,11 +201,21 @@ function FlashcardsSession({ cards, onClose }: { cards: Flashcard[]; onClose: ()
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <Button variant="outline" className="h-11 gap-1.5 rounded-full px-5" onClick={() => mark('unknown')}>
+        <Button
+          variant="outline"
+          className="h-11 gap-1.5 rounded-full px-5 text-warn hover:bg-warn-tint"
+          onClick={() => mark('unknown')}
+          aria-label={tr('Chưa thuộc', 'Not yet')}
+        >
           <X className="h-4 w-4" />
           {unknown}
         </Button>
-        <Button variant="outline" className="h-11 gap-1.5 rounded-full px-5 text-teal" onClick={() => mark('known')}>
+        <Button
+          variant="outline"
+          className="h-11 gap-1.5 rounded-full px-5 text-teal hover:bg-teal-tint"
+          onClick={() => mark('known')}
+          aria-label={tr('Đã thuộc', 'Got it')}
+        >
           {known}
           <Check className="h-4 w-4" />
         </Button>
@@ -213,6 +236,8 @@ function FlashcardsSession({ cards, onClose }: { cards: Flashcard[]; onClose: ()
 export function FlashcardsDialog({ open, onOpenChange, title, data }: FlashcardsDialogProps) {
   const { language } = useTranslation()
   const tr = (vi: string, en: string) => (language?.startsWith('vi') ? vi : en)
+  const [titleExpanded, setTitleExpanded] = useState(false)
+  const fullTitle = title || tr('Thẻ ghi nhớ', 'Flashcards')
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -227,9 +252,17 @@ export function FlashcardsDialog({ open, onOpenChange, title, data }: Flashcards
         }}
       >
         <DialogHeader className="min-w-0">
-          <DialogTitle className="flex min-w-0 items-center gap-2 pr-8 text-xl font-normal">
-            <Layers className="h-5 w-5 shrink-0 text-teal" />
-            <span className="min-w-0 truncate">{title || tr('Thẻ ghi nhớ', 'Flashcards')}</span>
+          <DialogTitle className="flex min-w-0 items-start gap-2 pr-8 text-xl font-normal">
+            <Layers className="mt-1 h-5 w-5 shrink-0 text-teal" />
+            {/* Click to show the whole title; hovering also shows it as a tooltip */}
+            <span
+              title={fullTitle}
+              aria-expanded={titleExpanded}
+              onClick={() => setTitleExpanded((v) => !v)}
+              className={cn('min-w-0 cursor-pointer break-words', !titleExpanded && 'truncate')}
+            >
+              {fullTitle}
+            </span>
           </DialogTitle>
         </DialogHeader>
 

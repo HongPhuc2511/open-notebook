@@ -58,7 +58,8 @@ export function useUpdateNote() {
     mutationFn: ({ id, data }: { id: string; data: UpdateNoteRequest }) =>
       notesApi.update(id, data),
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notes() })
+      // Same broad key the delete hook uses, so lists keyed by notebook id refresh too
+      queryClient.invalidateQueries({ queryKey: ['notes'] })
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.note(id) })
       toast({
         title: t('common.success'),

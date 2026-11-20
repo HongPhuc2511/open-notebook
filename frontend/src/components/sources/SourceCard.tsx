@@ -22,6 +22,7 @@ import {
   CheckCircle,
   AlertTriangle,
   Loader2,
+  Pencil,
   Unlink
 } from 'lucide-react'
 import { useSourceStatus } from '@/lib/hooks/use-sources'
@@ -38,6 +39,7 @@ interface SourceCardProps {
   onRetry?: (sourceId: string) => void
   onRefreshContent?: (sourceId: string) => void
   onRemoveFromNotebook?: (sourceId: string) => void
+  onRename?: (source: SourceListResponse) => void
   onClick?: (sourceId: string) => void
   onRefresh?: () => void
   className?: string
@@ -115,13 +117,15 @@ function SourceCardImpl({
   onRetry,
   onRefreshContent,
   onRemoveFromNotebook,
+  onRename,
   onRefresh,
   className,
   showRemoveFromNotebook = false,
   contextMode,
   onContextModeChange
 }: SourceCardProps) {
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
+  const tr = (vi: string, en: string) => (language?.startsWith('vi') ? vi : en)
   const statusConfigMap = getStatusConfig(t)
   
   // Only fetch status for sources that might have async processing
@@ -274,6 +278,17 @@ function SourceCardImpl({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
+              {onRename && (
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onRename(source)
+                  }}
+                >
+                  <Pencil className="mr-2 h-4 w-4" />
+                  {tr('Đổi tên', 'Rename')}
+                </DropdownMenuItem>
+              )}
               {showRemoveFromNotebook && (
                 <>
                   <DropdownMenuItem
