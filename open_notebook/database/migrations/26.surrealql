@@ -1,0 +1,57 @@
+-- Migration 26: Reports foundation
+DEFINE TABLE IF NOT EXISTS report SCHEMALESS;
+DEFINE FIELD IF NOT EXISTS notebook_id ON report TYPE string;
+DEFINE FIELD IF NOT EXISTS title ON report TYPE string;
+DEFINE FIELD IF NOT EXISTS description ON report TYPE string;
+DEFINE FIELD IF NOT EXISTS status ON report TYPE string;
+DEFINE FIELD IF NOT EXISTS config ON report TYPE object FLEXIBLE;
+DEFINE FIELD IF NOT EXISTS current_version ON report TYPE int;
+DEFINE INDEX IF NOT EXISTS report_notebook_updated ON report FIELDS notebook_id, updated;
+
+DEFINE TABLE IF NOT EXISTS report_section SCHEMALESS;
+DEFINE FIELD IF NOT EXISTS report_id ON report_section TYPE string;
+DEFINE FIELD IF NOT EXISTS title ON report_section TYPE string;
+DEFINE FIELD IF NOT EXISTS content ON report_section TYPE string;
+DEFINE FIELD IF NOT EXISTS position ON report_section TYPE int;
+DEFINE FIELD IF NOT EXISTS status ON report_section TYPE string;
+DEFINE FIELD IF NOT EXISTS metadata ON report_section TYPE object FLEXIBLE;
+DEFINE INDEX IF NOT EXISTS report_section_parent ON report_section FIELDS report_id, position;
+
+DEFINE TABLE IF NOT EXISTS report_input SCHEMALESS;
+DEFINE FIELD IF NOT EXISTS report_id ON report_input TYPE string;
+DEFINE FIELD IF NOT EXISTS input_id ON report_input TYPE string;
+DEFINE FIELD IF NOT EXISTS module ON report_input TYPE string;
+DEFINE FIELD IF NOT EXISTS content_type ON report_input TYPE string;
+DEFINE FIELD IF NOT EXISTS title ON report_input TYPE string;
+DEFINE FIELD IF NOT EXISTS content ON report_input TYPE any;
+DEFINE FIELD IF NOT EXISTS source_refs ON report_input TYPE array;
+DEFINE FIELD IF NOT EXISTS metadata ON report_input TYPE object FLEXIBLE;
+DEFINE FIELD IF NOT EXISTS content_hash ON report_input TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS source_version ON report_input TYPE option<string>;
+DEFINE INDEX IF NOT EXISTS report_input_parent ON report_input FIELDS report_id;
+
+DEFINE TABLE IF NOT EXISTS report_evidence SCHEMALESS;
+DEFINE FIELD IF NOT EXISTS report_id ON report_evidence TYPE string;
+DEFINE FIELD IF NOT EXISTS section_id ON report_evidence TYPE string;
+DEFINE FIELD IF NOT EXISTS input_id ON report_evidence TYPE string;
+DEFINE FIELD IF NOT EXISTS claim ON report_evidence TYPE string;
+DEFINE FIELD IF NOT EXISTS excerpt ON report_evidence TYPE string;
+DEFINE FIELD IF NOT EXISTS location ON report_evidence TYPE object FLEXIBLE;
+DEFINE FIELD IF NOT EXISTS support_status ON report_evidence TYPE string;
+DEFINE FIELD IF NOT EXISTS metadata ON report_evidence TYPE object FLEXIBLE;
+DEFINE INDEX IF NOT EXISTS report_evidence_parent ON report_evidence FIELDS report_id, section_id;
+
+DEFINE TABLE IF NOT EXISTS report_version SCHEMALESS;
+DEFINE FIELD IF NOT EXISTS report_id ON report_version TYPE string;
+DEFINE FIELD IF NOT EXISTS version ON report_version TYPE int;
+DEFINE FIELD IF NOT EXISTS snapshot ON report_version TYPE object FLEXIBLE;
+DEFINE FIELD IF NOT EXISTS change_summary ON report_version TYPE string;
+DEFINE INDEX IF NOT EXISTS report_version_parent ON report_version FIELDS report_id, version;
+
+DEFINE TABLE IF NOT EXISTS report_generation SCHEMALESS;
+DEFINE FIELD IF NOT EXISTS report_id ON report_generation TYPE string;
+DEFINE FIELD IF NOT EXISTS status ON report_generation TYPE string;
+DEFINE FIELD IF NOT EXISTS config ON report_generation TYPE object FLEXIBLE;
+DEFINE FIELD IF NOT EXISTS error ON report_generation TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS result_metadata ON report_generation TYPE object FLEXIBLE;
+DEFINE INDEX IF NOT EXISTS report_generation_parent ON report_generation FIELDS report_id, created;

@@ -1,0 +1,7 @@
+﻿-- Rollback migration 26: remove Reports tables.
+REMOVE TABLE IF EXISTS report_evidence;
+REMOVE TABLE IF EXISTS report_generation;
+REMOVE TABLE IF EXISTS report_input;
+REMOVE TABLE IF EXISTS report_section;
+REMOVE TABLE IF EXISTS report_version;
+REMOVE TABLE IF EXISTS report;

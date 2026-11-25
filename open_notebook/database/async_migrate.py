@@ -1,4 +1,4 @@
-"""
+﻿"""
 Async migration system for SurrealDB using the official Python client.
 Based on patterns from sblpy migration system.
 """
@@ -121,6 +121,7 @@ class AsyncMigrationManager:
             AsyncMigration.from_file("open_notebook/database/migrations/23.surrealql"),
             AsyncMigration.from_file("open_notebook/database/migrations/24.surrealql"),
             AsyncMigration.from_file("open_notebook/database/migrations/25.surrealql"),
+            AsyncMigration.from_file("open_notebook/database/migrations/26.surrealql"),
         ]
         self.down_migrations = [
             AsyncMigration.from_file(
@@ -197,6 +198,8 @@ class AsyncMigrationManager:
             ),
             AsyncMigration.from_file(
                 "open_notebook/database/migrations/25_down.surrealql"
+            ),            AsyncMigration.from_file(
+                "open_notebook/database/migrations/26_down.surrealql"
             ),
         ]
         self.runner = AsyncMigrationRunner(
@@ -281,3 +284,4 @@ async def lower_version() -> None:
             "DELETE type::thing('_sbl_migrations', $version);",
             {"version": current_version},
         )
+
