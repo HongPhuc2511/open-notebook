@@ -74,6 +74,7 @@ interface AddSourceDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   defaultNotebookId?: string
+  initialType?: 'link' | 'upload' | 'text'
 }
 
 interface ProcessingState {
@@ -91,7 +92,8 @@ interface BatchProgress {
 export function AddSourceDialog({ 
   open, 
   onOpenChange, 
-  defaultNotebookId 
+  defaultNotebookId,
+  initialType = 'upload'
 }: AddSourceDialogProps) {
   const { t } = useTranslation()
 
@@ -134,13 +136,17 @@ export function AddSourceDialog({
   } = useForm<CreateSourceFormData>({
     resolver: zodResolver(createSourceSchema),
     defaultValues: {
-      type: 'upload',
+      type: initialType,
       notebooks: defaultNotebookId ? [defaultNotebookId] : [],
       embed: settings?.default_embedding_option === 'always' || settings?.default_embedding_option === 'ask',
       async_processing: true,
       transformations: [],
     },
   })
+
+  useEffect(() => {
+    if (open) setValue('type', initialType)
+  }, [open, initialType, setValue])
 
   // Initialize form values when settings and transformations are loaded
   useEffect(() => {
@@ -156,14 +162,14 @@ export function AddSourceDialog({
                          (settings.default_embedding_option === 'ask')
 
       reset({
-        type: 'upload',
+        type: initialType,
         notebooks: defaultNotebookId ? [defaultNotebookId] : [],
         embed: embedValue,
         async_processing: true,
         transformations: [],
       })
     }
-  }, [settings, transformations, defaultNotebookId, reset])
+  }, [settings, transformations, defaultNotebookId, initialType, reset])
 
   // Cleanup effect
   useEffect(() => {

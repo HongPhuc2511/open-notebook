@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import {
   FileText,
-  Globe,
+  ExternalLink,
   Upload,
   MoreVertical,
   Trash2,
@@ -22,7 +22,6 @@ import {
   CheckCircle,
   AlertTriangle,
   Loader2,
-  Pencil,
   Unlink
 } from 'lucide-react'
 import { useSourceStatus } from '@/lib/hooks/use-sources'
@@ -31,7 +30,6 @@ import type { TFunction } from 'i18next'
 import { cn } from '@/lib/utils'
 import { ContextMode } from '@/app/(dashboard)/notebooks/[id]/page'
 import { Checkbox } from '@/components/ui/checkbox'
-import { SourceFavicon, getUploadIcon } from './SourceFavicon'
 
 interface SourceCardProps {
   source: SourceListResponse
@@ -39,7 +37,6 @@ interface SourceCardProps {
   onRetry?: (sourceId: string) => void
   onRefreshContent?: (sourceId: string) => void
   onRemoveFromNotebook?: (sourceId: string) => void
-  onRename?: (source: SourceListResponse) => void
   onClick?: (sourceId: string) => void
   onRefresh?: () => void
   className?: string
@@ -49,7 +46,7 @@ interface SourceCardProps {
 }
 
 const SOURCE_TYPE_ICONS = {
-  link: Globe,
+  link: ExternalLink,
   upload: Upload,
   text: FileText,
 } as const
@@ -117,15 +114,13 @@ function SourceCardImpl({
   onRetry,
   onRefreshContent,
   onRemoveFromNotebook,
-  onRename,
   onRefresh,
   className,
   showRemoveFromNotebook = false,
   contextMode,
   onContextModeChange
 }: SourceCardProps) {
-  const { t, language } = useTranslation()
-  const tr = (vi: string, en: string) => (language?.startsWith('vi') ? vi : en)
+  const { t } = useTranslation()
   const statusConfigMap = getStatusConfig(t)
   
   // Only fetch status for sources that might have async processing
@@ -186,8 +181,7 @@ function SourceCardImpl({
   const statusConfig = statusConfigMap[currentStatus] || statusConfigMap.completed
   const StatusIcon = statusConfig.icon
   const sourceType = getSourceType(source)
-  const SourceTypeIcon =
-    sourceType === 'upload' ? getUploadIcon(source.asset?.file_path) : SOURCE_TYPE_ICONS[sourceType]
+  const SourceTypeIcon = SOURCE_TYPE_ICONS[sourceType]
   
    const title = source.title || t('sources.untitledSource')
 
@@ -228,67 +222,106 @@ function SourceCardImpl({
   return (
     <Card
       className={cn(
-        'group relative cursor-pointer gap-0 rounded-xl border-0 bg-transparent py-0 shadow-none transition-colors duration-150 hover:bg-muted',
+        'transition-colors duration-150 shadow-none border-0 bg-transparent rounded-lg hover:bg-muted group relative cursor-pointer',
         className
       )}
       onClick={handleCardClick}
     >
-      <CardContent className="px-3 py-2">
-        <div className="flex items-center gap-3">
-          {sourceType === 'link' && source.asset?.url ? (
-            <SourceFavicon url={source.asset.url} className="h-5 w-5 shrink-0" />
-          ) : (
-            <SourceTypeIcon className="h-5 w-5 shrink-0 text-muted-foreground" />
-          )}
-
-          <div className="min-w-0 flex-1">
-            <h4 className="truncate text-sm leading-tight" title={title}>
-              {title}
-            </h4>
-
+      <CardContent className="px-2 py-1">
+        {/* Header with status indicator */}
+        <div className="flex items-start justify-between gap-2 mb-0">
+          <div className="flex-1 min-w-0">
+            {/* Status badge - only show if not completed */}
             {!isCompleted && (
-              <div className="mt-1 flex items-center gap-2">
+              <div className="flex items-center gap-2 mb-2">
                 <div className={cn(
-                  'flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-medium',
+                  'flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium',
                   statusConfig.bgColor,
                   statusConfig.color
                 )}>
-                  <StatusIcon className={cn('h-3 w-3', isProcessing && 'animate-spin')} />
+                  <StatusIcon className={cn(
+                    'h-3 w-3',
+                    isProcessing && 'animate-spin'
+                  )} />
                   {statusLoading && shouldFetchStatus ? t('sources.checking') : statusConfig.label}
+                </div>
+
+                {/* Source type indicator */}
+                <div className="flex items-center gap-1 text-muted-foreground">
+                  <SourceTypeIcon className="h-3 w-3" />
+                  <span className="text-xs capitalize">{t('common.source')}</span>
                 </div>
               </div>
             )}
 
+            {/* Title */}
+            <div className={cn('mb-0 flex items-center gap-1.5', !isCompleted && 'mb-0')}>
+              <SourceTypeIcon className="h-4 w-4 shrink-0 text-primary" />
+              <h4
+                className="text-xs font-medium leading-tight line-clamp-2 break-words pr-7"
+                title={title}
+              >
+                {title}
+              </h4>
+            </div>
+
+            {/* Processing message for active statuses */}
             {statusData?.message && (isProcessing || isFailed) && (
-              <p className="mt-1 text-xs italic text-muted-foreground">
+              <p className="text-xs text-muted-foreground mb-2 italic">
                 {statusData.message}
               </p>
             )}
+
+            {/* One-line metadata row: type + meta in a single muted line */}
+            <div className="flex items-center gap-1 flex-wrap text-[10px] leading-tight text-muted-foreground min-w-0 pl-[22px]">
+              <span className="inline-flex items-center gap-1">
+                <SourceTypeIcon className="h-3 w-3" />
+                {sourceType === 'link' ? t('sources.addUrl') : sourceType === 'upload' ? t('sources.uploadFile') : t('sources.enterText')}
+              </span>
+
+              {isCompleted && source.insights_count > 0 && (
+                <>
+                  <span aria-hidden>·</span>
+                  <span>{t('sources.insightsCount', { count: source.insights_count })}</span>
+                </>
+              )}
+              {source.topics && source.topics.length > 0 && isCompleted && (
+                <>
+                  <span aria-hidden>·</span>
+                  <span className="truncate">
+                    {source.topics.slice(0, 2).join(', ')}
+                    {source.topics.length > 2 && ` +${source.topics.length - 2}`}
+                  </span>
+                </>
+              )}
+            </div>
           </div>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 w-7 shrink-0 p-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 data-[state=open]:opacity-100"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              {onRename && (
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onRename(source)
-                  }}
+          {/* Context toggle and actions */}
+          <div className="flex items-center gap-1">
+            {/* Context toggle - only show if handler provided */}
+            {onContextModeChange && contextMode && (
+              <Checkbox
+                checked={contextMode !== 'off'}
+                onCheckedChange={(checked) => onContextModeChange(checked ? 'full' : 'off')}
+                onClick={(e) => e.stopPropagation()} // do not open the source modal
+                aria-label="Include in chat context"
+              />
+            )}
+
+            {/* Actions dropdown — ⋮ pinned to the card's top-right */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute top-1.5 right-8 h-7 w-7 p-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  <Pencil className="mr-2 h-4 w-4" />
-                  {tr('Đổi tên', 'Rename')}
-                </DropdownMenuItem>
-              )}
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
               {showRemoveFromNotebook && (
                 <>
                   <DropdownMenuItem
@@ -298,7 +331,7 @@ function SourceCardImpl({
                     }}
                     disabled={!onRemoveFromNotebook}
                   >
-                    <Unlink className="mr-2 h-4 w-4" />
+                    <Unlink className="h-4 w-4 mr-2" />
                     {t('sources.removeFromNotebook')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -314,7 +347,7 @@ function SourceCardImpl({
                     }}
                     disabled={!onRetry}
                   >
-                    <RefreshCw className="mr-2 h-4 w-4" />
+                    <RefreshCw className="h-4 w-4 mr-2" />
                     {t('sources.retryProcessing')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -329,7 +362,7 @@ function SourceCardImpl({
                       handleRefreshContent()
                     }}
                   >
-                    <RefreshCw className="mr-2 h-4 w-4" />
+                    <RefreshCw className="h-4 w-4 mr-2" />
                     {t('sources.refreshContent')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -344,24 +377,17 @@ function SourceCardImpl({
                 disabled={!onDelete}
                 className="text-destructive focus:text-destructive"
               >
-                <Trash2 className="mr-2 h-4 w-4" />
+                <Trash2 className="h-4 w-4 mr-2" />
                 {t('sources.deleteSource')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-
-          {onContextModeChange && contextMode && (
-            <Checkbox
-              checked={contextMode !== 'off'}
-              onCheckedChange={(checked) => onContextModeChange(checked ? 'full' : 'off')}
-              onClick={(e) => e.stopPropagation()}
-              aria-label="Include in chat context"
-            />
-          )}
+          </div>
         </div>
-
+        {/* Prominent retry action surfaced directly on failed cards so it's
+            discoverable without opening the dropdown menu (#726). */}
         {isFailed ? (
-          <div className="flex gap-2 border-t pt-2 mt-2">
+          <div className="flex gap-2 pt-2 border-t">
             <Button
               variant="default"
               size="sm"
@@ -372,23 +398,24 @@ function SourceCardImpl({
               disabled={!onRetry}
               className="h-7 text-xs"
             >
-              <RefreshCw className="mr-1 h-3 w-3" />
+              <RefreshCw className="h-3 w-3 mr-1" />
               {t('sources.retryProcessing')}
             </Button>
           </div>
         ) : null}
 
+        {/* Processing progress indicator */}
         {isProcessing && typeof statusData?.processing_info?.progress === 'number' && (
-          <div className="mt-2 border-t pt-2">
-            <div className="mb-1 flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">{t('common.progress')}</span>
+          <div className="mt-3 pt-2 border-t">
+            <div className="flex justify-between items-center mb-1">
+            <span className="text-xs text-muted-foreground">{t('common.progress')}</span>
               <span className="text-xs text-muted-foreground">
                 {Math.round(statusData.processing_info.progress as number)}%
               </span>
             </div>
-            <div className="h-1.5 w-full rounded-full bg-muted">
+            <div className="w-full bg-muted rounded-full h-1.5">
               <div
-                className="h-1.5 rounded-full bg-teal transition-all duration-300"
+                className="bg-teal h-1.5 rounded-full transition-all duration-300"
                 style={{ width: `${statusData.processing_info.progress as number}%` }}
               />
             </div>
@@ -397,7 +424,7 @@ function SourceCardImpl({
       </CardContent>
     </Card>
   )
-}  
+}
 
 /**
  * SourceCard is rendered in long lists (one per source). Without memoization, any

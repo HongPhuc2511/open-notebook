@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
-import { NoteResponse, SourceListResponse } from '@/lib/types/api'
+import { SourceListResponse } from '@/lib/types/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -10,46 +10,21 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import {
-  Pencil,
-  Plus,
-  FileText,
-  Link2,
-  ChevronDown,
-  ChevronRight,
-  Loader2,
-  ListChecks,
-  Globe,
-  Sparkles,
-  ArrowRight,
-  Bot,
-  StickyNote,
-  MoreVertical,
-  Trash2,
-} from 'lucide-react'
+import { Plus, FileText, Link2, ChevronDown, ChevronRight, Loader2, Globe2, Upload, Search } from 'lucide-react'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
 import { AddSourceDialog } from '@/components/sources/AddSourceDialog'
 import { AddExistingSourceDialog } from '@/components/sources/AddExistingSourceDialog'
 import { SourceCard } from '@/components/sources/SourceCard'
-import {
-  useDeleteSource,
-  useRetrySource,
-  useRemoveSourceFromNotebook,
-  useUpdateSource,
-} from '@/lib/hooks/use-sources'
-import { useDeleteNote, useUpdateNote } from '@/lib/hooks/use-notes'
+import { useDeleteSource, useRetrySource, useRemoveSourceFromNotebook } from '@/lib/hooks/use-sources'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
 import { ContextMode } from '../[id]/page'
-import type { NoteContextMode } from '../[id]/page'
-import type { SourceBulkAction, NoteContextDefault } from '@/lib/utils/source-context'
+import type { SourceBulkAction } from '@/lib/utils/source-context'
 import { CollapsibleColumn, createCollapseButton } from '@/components/notebooks/CollapsibleColumn'
 import { useNotebookColumnsStore } from '@/lib/stores/notebook-columns-store'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { Checkbox } from '@/components/ui/checkbox'
-import { NoteEditorDialog } from './NoteEditorDialog'
-import { RenameOutputDialog } from '@/components/notebooks/RenameOutputDialog'
 
 interface SourcesColumnProps {
   sources?: SourceListResponse[]
@@ -60,11 +35,7 @@ interface SourcesColumnProps {
   contextSelections?: Record<string, ContextMode>
   onContextModeChange?: (sourceId: string, mode: ContextMode) => void
   onBulkContextModeChange?: (action: SourceBulkAction) => void
-  notes?: NoteResponse[]
-  notesLoading?: boolean
-  noteContextSelections?: Record<string, NoteContextMode>
-  onNoteContextModeChange?: (noteId: string, mode: NoteContextMode) => void
-  onBulkNoteContextModeChange?: (action: NoteContextDefault) => void
+  // Pagination props
   hasNextPage?: boolean
   isFetchingNextPage?: boolean
   fetchNextPage?: () => void
@@ -78,66 +49,86 @@ export function SourcesColumn({
   contextSelections,
   onContextModeChange,
   onBulkContextModeChange,
-  notes: allNotes,
-  notesLoading = false,
-  noteContextSelections,
-  onNoteContextModeChange,
-  onBulkNoteContextModeChange,
   hasNextPage,
   isFetchingNextPage,
   fetchNextPage,
 }: SourcesColumnProps) {
-  const { t, language } = useTranslation()
-  const tr = (vi: string, en: string) => (language?.startsWith('vi') ? vi : en)
-
-  // Generated outputs (mind maps, quizzes) live in Studio, so keep them out of the Notes group
-  const notes = useMemo(
-    () => allNotes?.filter((n) => !['mindmap', 'quiz', 'flashcards'].includes(n.note_type ?? '')),
-    [allNotes]
-  )
+  const { t } = useTranslation()
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [addDialogOpen, setAddDialogOpen] = useState(false)
+  const [sourceDialogType, setSourceDialogType] = useState<'link' | 'upload' | 'text'>('upload')
   const [addExistingDialogOpen, setAddExistingDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [sourceToDelete, setSourceToDelete] = useState<string | null>(null)
   const [removeDialogOpen, setRemoveDialogOpen] = useState(false)
   const [sourceToRemove, setSourceToRemove] = useState<string | null>(null)
+  const [sourceQuery, setSourceQuery] = useState('')
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
 
-  const [editorOpen, setEditorOpen] = useState(false)
-  const [editingNote, setEditingNote] = useState<NoteResponse | undefined>()
-  const [noteDeleteDialogOpen, setNoteDeleteDialogOpen] = useState(false)
-  const [noteToDelete, setNoteToDelete] = useState<string | null>(null)
-  const [sourceToRename, setSourceToRename] = useState<SourceListResponse | null>(null)
-  const [noteToRename, setNoteToRename] = useState<NoteResponse | null>(null)
-  const [notesOpen, setNotesOpen] = useState(true)
+  const visibleSources = useMemo(() => {
+    const query = sourceQuery.trim().toLowerCase()
+    if (!query) return sources ?? []
+    return (sources ?? []).filter(source =>
+      `${source.title ?? ''} ${source.asset?.url ?? ''} ${source.asset?.file_path ?? ''}`
+        .toLowerCase()
+        .includes(query)
+    )
+  }, [sources, sourceQuery])
+
+  const sourceGroups = useMemo(() => {
+    const groups = [
+      { id: 'text', label: 'Ghi chú', items: [] as SourceListResponse[] },
+      { id: 'link', label: 'Nguồn web', items: [] as SourceListResponse[] },
+      { id: 'upload', label: 'Tệp tải lên', items: [] as SourceListResponse[] },
+    ]
+    for (const source of visibleSources) {
+      if (source.asset?.url) groups[1].items.push(source)
+      else if (source.asset?.file_path) groups[2].items.push(source)
+      else groups[0].items.push(source)
+    }
+    // Keep all three sections visible to match the reference layout, including empty groups.
+    return groups
+  }, [visibleSources])
 
   const { openModal } = useModalManager()
   const deleteSource = useDeleteSource()
   const retrySource = useRetrySource()
   const removeFromNotebook = useRemoveSourceFromNotebook()
-  const deleteNote = useDeleteNote()
-  const updateSource = useUpdateSource()
-  const updateNote = useUpdateNote()
 
+  // Collapsible column state
   const { sourcesCollapsed, toggleSources } = useNotebookColumnsStore()
-  const sourcesLabel = t('navigation.sources')
   const collapseButton = useMemo(
-    () => createCollapseButton(toggleSources, sourcesLabel),
-    [toggleSources, sourcesLabel]
+    () => createCollapseButton(toggleSources, t('navigation.sources')),
+    [toggleSources, t('navigation.sources')]
   )
 
+  // Scroll container ref for infinite scroll
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
+  // Allow the notebook workspace header to open the existing source dialog.
+  useEffect(() => {
+    const openDialog = (event: Event) => {
+      const requestedType = (event as CustomEvent<{ type?: 'link' | 'upload' | 'text' }>).detail?.type
+      setSourceDialogType(requestedType === 'link' || requestedType === 'text' ? requestedType : 'upload')
+      setAddDialogOpen(true)
+    }
+    window.addEventListener('open-notebook-source-dialog', openDialog)
+    return () => window.removeEventListener('open-notebook-source-dialog', openDialog)
+  }, [])
+
+  // Handle scroll for infinite loading
   const handleScroll = useCallback(() => {
     const container = scrollContainerRef.current
     if (!container || !hasNextPage || isFetchingNextPage || !fetchNextPage) return
 
     const { scrollTop, scrollHeight, clientHeight } = container
+    // Load more when user scrolls within 200px of the bottom
     if (scrollHeight - scrollTop - clientHeight < 200) {
       fetchNextPage()
     }
   }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
+  // Attach scroll listener
   useEffect(() => {
     const container = scrollContainerRef.current
     if (!container) return
@@ -145,20 +136,11 @@ export function SourcesColumn({
     container.addEventListener('scroll', handleScroll)
     return () => container.removeEventListener('scroll', handleScroll)
   }, [handleScroll])
-
-  const sourcesAllSelected =
-    !sources?.length ||
+  
+  // True when every loaded source is included in the chat context
+  const allSelected =
+    !!sources?.length &&
     sources.every((s) => contextSelections?.[s.id] && contextSelections[s.id] !== 'off')
-  const notesAllSelected =
-    !notes?.length ||
-    notes.every((n) => noteContextSelections?.[n.id] && noteContextSelections[n.id] !== 'off')
-  const hasItems = (sources?.length ?? 0) + (notes?.length ?? 0) > 0
-  const allSelected = hasItems && sourcesAllSelected && notesAllSelected
-
-  const handleToggleAll = () => {
-    onBulkContextModeChange?.(allSelected ? 'exclude' : 'full')
-    onBulkNoteContextModeChange?.(allSelected ? 'exclude' : 'include')
-  }
 
   const handleDeleteClick = (sourceId: string) => {
     setSourceToDelete(sourceId)
@@ -195,6 +177,7 @@ export function SourcesColumn({
       setSourceToRemove(null)
     } catch (error) {
       console.error('Failed to remove source from notebook:', error)
+      // Error toast is handled by the hook
     }
   }
 
@@ -210,243 +193,107 @@ export function SourcesColumn({
     openModal('source', sourceId)
   }
 
-  const handleOpenEditor = (note?: NoteResponse) => {
-    setEditingNote(note)
-    setEditorOpen(true)
-  }
-
-  const handleNoteRenameSubmit = async (title: string) => {
-    if (!noteToRename) return
-    try {
-      await updateNote.mutateAsync({ id: noteToRename.id, data: { title } })
-      setNoteToRename(null)
-    } catch {
-      // error toast is shown by the hook
-    }
-  }
-
-  const handleSourceRenameSubmit = async (title: string) => {
-    if (!sourceToRename) return
-    try {
-      await updateSource.mutateAsync({ id: sourceToRename.id, data: { title } })
-      setSourceToRename(null)
-    } catch {
-      // error toast is shown by the hook
-    }
-  }
-
-  const handleNoteDeleteClick = (noteId: string) => {
-    setNoteToDelete(noteId)
-    setNoteDeleteDialogOpen(true)
-  }
-
-  const handleNoteDeleteConfirm = async () => {
-    if (!noteToDelete) return
-
-    try {
-      await deleteNote.mutateAsync(noteToDelete)
-      setNoteDeleteDialogOpen(false)
-      setNoteToDelete(null)
-    } catch (error) {
-      console.error('Failed to delete note:', error)
-    }
-  }
-
   return (
     <>
       <CollapsibleColumn
         isCollapsed={sourcesCollapsed}
         onToggle={toggleSources}
         collapsedIcon={FileText}
-        collapsedLabel={sourcesLabel}
+        collapsedLabel={t('navigation.sources')}
       >
-        <Card className="h-full flex flex-col gap-3 overflow-hidden rounded-3xl bg-popover py-5">
-          <CardHeader className="flex-shrink-0 pb-0">
+        <Card className="h-full flex flex-col flex-1 gap-3 overflow-hidden rounded-2xl bg-popover py-5">
+          <CardHeader className="shrink-0 space-y-3 px-3 pb-2 pt-3">
             <div className="flex items-center justify-between gap-2">
-              <CardTitle className="text-lg font-normal text-foreground">
-                {sourcesLabel}
+              <CardTitle className="text-base font-medium text-foreground">
+                {t('navigation.sources')}
               </CardTitle>
-              {collapseButton}
+              <div className="flex items-center gap-1">
+                <Button type="button" variant="ghost" size="sm" className="h-8 gap-1 px-2 text-xs" title="Tìm trên web"
+                  onClick={() => { setSourceDialogType('link'); setAddDialogOpen(true) }}>
+                  <Globe2 className="h-4 w-4" />
+                  <span className="hidden sm:inline">Web</span>
+                </Button>
+                <Button type="button" variant="ghost" size="sm" className="h-8 gap-1 px-2 text-xs" title="Thêm liên kết"
+                  onClick={() => { setSourceDialogType('link'); setAddDialogOpen(true) }}>
+                  <Link2 className="h-4 w-4" />
+                  <span className="hidden sm:inline">Liên kết</span>
+                </Button>
+                <Button type="button" variant="ghost" size="sm" className="h-8 gap-1 px-2 text-xs" title="Tải tệp"
+                  onClick={() => { setSourceDialogType('upload'); setAddDialogOpen(true) }}>
+                  <Upload className="h-4 w-4" />
+                  <span className="hidden sm:inline">Tệp</span>
+                </Button>
+                <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="icon" variant="tonal" className="h-8 w-8 rounded-full" title={t('sources.addSource')}>
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => { setDropdownOpen(false); setAddDialogOpen(true) }}>
+                      <Plus className="mr-2 h-4 w-4" />{t('sources.addSource')}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => { setDropdownOpen(false); setAddExistingDialogOpen(true) }}>
+                      <Link2 className="mr-2 h-4 w-4" />{t('sources.addExistingTitle')}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                {collapseButton}
+              </div>
+            </div>
+            <div className="flex items-center gap-2 rounded-full border border-border bg-muted/30 px-3 py-2 focus-within:border-primary/50">
+              <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <input value={sourceQuery} onChange={event => setSourceQuery(event.target.value)}
+                placeholder="Tìm nguồn trong notebook..." aria-label="Tìm nguồn trong notebook"
+                className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground" />
             </div>
           </CardHeader>
 
-          <div className="flex flex-shrink-0 gap-2 px-6">
-            <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
-              <DropdownMenuTrigger asChild>
-                <Button variant="secondary" className="h-10 min-w-0 flex-1 rounded-full">
-                  <Plus className="mr-2 h-4 w-4 shrink-0" />
-                  <span className="truncate">{t('sources.addSource')}</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                <DropdownMenuItem onClick={() => { setDropdownOpen(false); setAddDialogOpen(true) }}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  {t('sources.addSource')}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => { setDropdownOpen(false); setAddExistingDialogOpen(true) }}>
-                  <Link2 className="mr-2 h-4 w-4" />
-                  {t('sources.addExistingTitle')}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <Button
-              variant="secondary"
-              className="h-10 min-w-0 flex-1 rounded-full"
-              onClick={() => handleOpenEditor()}
-            >
-              <Plus className="mr-2 h-4 w-4 shrink-0" />
-              <span className="truncate">{t('common.writeNote')}</span>
-            </Button>
-          </div>
-
-          <div className="flex flex-shrink-0 items-center gap-1 px-6">
-            {onBulkContextModeChange && sources && sources.length > 0 && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" title={t('sources.bulkContext')}>
-                    <ListChecks className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  <DropdownMenuItem onClick={() => onBulkContextModeChange('insights')}>
-                    {t('sources.includeAllInsights')}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onBulkContextModeChange('full')}>
-                    {t('sources.includeAllFull')}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onBulkContextModeChange('exclude')}>
-                    {t('sources.excludeAllFromContext')}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-            {onBulkContextModeChange && hasItems && (
-              <label className="ml-auto flex cursor-pointer items-center gap-3 py-1 pr-3 text-sm text-muted-foreground">
-                {t('sources.selectAll')}
-                <Checkbox checked={allSelected} onCheckedChange={handleToggleAll} />
-              </label>
-            )}
-          </div>
-
-          <CardContent ref={scrollContainerRef} className="flex-1 min-h-0 overflow-y-auto">
-            {isLoading || notesLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <LoadingSpinner />
-              </div>
-            ) : !hasItems ? (
-              <EmptyState
-                icon={FileText}
-                title={t('sources.noSourcesYet')}
-                description={t('sources.createFirstSource')}
-              />
+          <CardContent ref={scrollContainerRef} className="min-h-0 flex-1 overflow-y-auto px-3 pb-3 pt-1">
+            {isLoading ? (
+              <div className="flex items-center justify-center py-8"><LoadingSpinner /></div>
+            ) : !sources || sources.length === 0 ? (
+              <EmptyState icon={FileText} title={t('sources.noSourcesYet')} description={t('sources.createFirstSource')} />
+            ) : visibleSources.length === 0 ? (
+              <p className="px-2 py-6 text-center text-sm text-muted-foreground">Không tìm thấy nguồn phù hợp.</p>
             ) : (
-              <div className="space-y-1">
-                {notes && notes.length > 0 && (
-                  <div>
-                    <div className="flex items-center gap-1 py-1 pl-1 pr-3">
-                      <Button
-                        variant="ghost"
-                        className="h-8 flex-1 justify-start gap-2 px-2 text-sm font-normal"
-                        onClick={() => setNotesOpen((open) => !open)}
-                        aria-expanded={notesOpen}
-                      >
-                        {notesOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                        {t('common.notes')}
-                      </Button>
-                      {onBulkNoteContextModeChange && (
-                        <Checkbox
-                          checked={notesAllSelected}
-                          onCheckedChange={() => onBulkNoteContextModeChange(notesAllSelected ? 'exclude' : 'include')}
-                          aria-label="Include all notes in chat context"
-                        />
-                      )}
-                    </div>
-                    {notesOpen &&
-                      notes.map((note) => (
-                        <div
-                          key={note.id}
-                          className="group relative flex cursor-pointer items-center gap-3 rounded-xl py-2 pl-7 pr-3 transition-colors hover:bg-muted"
-                          onClick={() => handleOpenEditor(note)}
-                        >
-                          {note.note_type === 'ai' ? (
-                            <Bot className="h-5 w-5 shrink-0 text-teal" />
-                          ) : (
-                            <StickyNote className="h-5 w-5 shrink-0 text-muted-foreground" />
-                          )}
-                          <span className="min-w-0 flex-1 truncate text-sm">
-                            {note.title || note.content || t('sources.untitledNote')}
-                          </span>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-7 w-7 shrink-0 p-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-48">
-                              <DropdownMenuItem
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  setNoteToRename(note)
-                                }}
-                              >
-                                <Pencil className="mr-2 h-4 w-4" />
-                                {tr('Đổi tên', 'Rename')}
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleNoteDeleteClick(note.id)
-                                }}
-                                className="text-destructive focus:text-destructive"
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                {t('notebooks.deleteNote')}
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                          {onNoteContextModeChange && noteContextSelections?.[note.id] && (
-                            <Checkbox
-                              checked={noteContextSelections[note.id] !== 'off'}
-                              onCheckedChange={(checked) => onNoteContextModeChange(note.id, checked ? 'full' : 'off')}
-                              onClick={(e) => e.stopPropagation()}
-                              aria-label="Include in chat context"
-                            />
-                          )}
-                        </div>
-                      ))}
-                  </div>
+              <div className="space-y-3">
+                {onBulkContextModeChange && (
+                  <label className="flex cursor-pointer items-center justify-end gap-3 px-2 py-2 text-sm text-muted-foreground">
+                    {t('sources.selectAll')}
+                    <Checkbox
+                      checked={!!visibleSources.length && visibleSources.every(source => contextSelections?.[source.id] && contextSelections[source.id] !== 'off')}
+                      onCheckedChange={() => onBulkContextModeChange(allSelected ? 'exclude' : 'full')}
+                    />
+                  </label>
                 )}
-
-                {sources?.map((source) => (
-                  <SourceCard onRename={setSourceToRename}
-                    key={source.id}
-                    source={source}
-                    onClick={handleSourceClick}
-                    onDelete={handleDeleteClick}
-                    onRetry={handleRetry}
-                    onRefreshContent={handleRetry}
-                    onRemoveFromNotebook={handleRemoveFromNotebook}
-                    onRefresh={onRefresh}
-                    showRemoveFromNotebook={true}
-                    contextMode={contextSelections?.[source.id]}
-                    onContextModeChange={onContextModeChange
-                      ? (mode) => onContextModeChange(source.id, mode)
-                      : undefined
-                    }
-                  />
+                {sourceGroups.map(group => (
+                  <section key={group.id} className="overflow-hidden">
+                    <button type="button"
+                      onClick={() => setCollapsedGroups(prev => ({ ...prev, [group.id]: !prev[group.id] }))}
+                      className="flex w-full items-center gap-2 rounded-md px-1 py-1.5 text-left text-xs font-semibold text-foreground hover:bg-muted/60"
+                      aria-expanded={!collapsedGroups[group.id]}>
+                      {collapsedGroups[group.id]
+                        ? <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                        : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
+                      <span>{group.label}</span>
+                      <span className="text-muted-foreground">({group.items.length})</span>
+                    </button>
+                    {!collapsedGroups[group.id] && (
+                      <div className="space-y-1">
+                        {group.items.map(source => (
+                          <SourceCard key={source.id} source={source}
+                            onClick={handleSourceClick} onDelete={handleDeleteClick}
+                            onRetry={handleRetry} onRefreshContent={handleRetry}
+                            onRemoveFromNotebook={handleRemoveFromNotebook} onRefresh={onRefresh}
+                            showRemoveFromNotebook={true} contextMode={contextSelections?.[source.id]}
+                            onContextModeChange={onContextModeChange ? mode => onContextModeChange(source.id, mode) : undefined} />
+                        ))}
+                      </div>
+                    )}
+                  </section>
                 ))}
-
-                {isFetchingNextPage && (
-                  <div className="flex items-center justify-center py-4">
-                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                  </div>
-                )}
+                {isFetchingNextPage && <div className="flex items-center justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>}
               </div>
             )}
           </CardContent>
@@ -457,6 +304,7 @@ export function SourcesColumn({
         open={addDialogOpen}
         onOpenChange={setAddDialogOpen}
         defaultNotebookId={notebookId}
+        initialType={sourceDialogType}
       />
 
       <AddExistingSourceDialog
@@ -464,38 +312,6 @@ export function SourcesColumn({
         onOpenChange={setAddExistingDialogOpen}
         notebookId={notebookId}
         onSuccess={onRefresh}
-      />
-
-      <RenameOutputDialog
-        open={noteToRename !== null}
-        onOpenChange={(open) => {
-          if (!open) setNoteToRename(null)
-        }}
-        initialTitle={noteToRename?.title ?? ''}
-        isSaving={updateNote.isPending}
-        onSubmit={handleNoteRenameSubmit}
-      />
-
-      <RenameOutputDialog
-        open={sourceToRename !== null}
-        onOpenChange={(open) => {
-          if (!open) setSourceToRename(null)
-        }}
-        initialTitle={sourceToRename?.title ?? ''}
-        isSaving={updateSource.isPending}
-        onSubmit={handleSourceRenameSubmit}
-      />
-
-      <NoteEditorDialog
-        open={editorOpen}
-        onOpenChange={(open) => {
-          setEditorOpen(open)
-          if (!open) {
-            setEditingNote(undefined)
-          }
-        }}
-        notebookId={notebookId}
-        note={editingNote}
       />
 
       <ConfirmDialog
@@ -518,17 +334,6 @@ export function SourcesColumn({
         onConfirm={handleRemoveConfirm}
         isLoading={removeFromNotebook.isPending}
         confirmVariant="default"
-      />
-
-      <ConfirmDialog
-        open={noteDeleteDialogOpen}
-        onOpenChange={setNoteDeleteDialogOpen}
-        title={t('notebooks.deleteNote')}
-        description={t('notebooks.deleteNoteConfirm')}
-        confirmText={t('common.delete')}
-        onConfirm={handleNoteDeleteConfirm}
-        isLoading={deleteNote.isPending}
-        confirmVariant="destructive"
       />
     </>
   )
