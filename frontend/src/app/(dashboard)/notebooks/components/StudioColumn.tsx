@@ -1,7 +1,7 @@
-
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { formatDistanceToNow } from 'date-fns'
 import {
   ClipboardList,
@@ -67,6 +67,7 @@ import {
   ReportCreationDialog,
   type ReportGenerationRequest,
 } from '@/components/notebooks/ReportCreationDialog'
+import { ReportViewerDialog } from '@/components/notebooks/ReportViewerDialog'
 
 interface StudioColumnProps {
   sources?: SourceListResponse[]
@@ -130,6 +131,7 @@ export function StudioColumn({
   notebookId,
   onGenerateReport,
 }: StudioColumnProps) {
+  const router = useRouter()
   const { t, language } = useTranslation()
 
   const tr = (vi: string, en: string) =>
@@ -170,11 +172,13 @@ export function StudioColumn({
 
   const [reportConfigOpen, setReportConfigOpen] = useState(false)
 
-  // Saved Reports
+  // Studio Outputs - Reports
   const [reports, setReports] = useState<ReportResponse[]>([])
   const [reportsLoading, setReportsLoading] = useState(true)
-  const [selectedReportId, setSelectedReportId] = useState<string | null>(null)
+  const [selectedReport, setSelectedReport] =
+    useState<ReportResponse | null>(null)
 
+  // Load reports belonging to this notebook.
   const loadReports = useCallback(async () => {
     try {
       const items = await reportsApi.list(notebookId)
@@ -203,9 +207,37 @@ export function StudioColumn({
     }
   }, [loadReports])
 
+  // Restore the report after returning from a source detail page.
+  useEffect(() => {
+    if (reportsLoading || reports.length === 0) return
+
+    const params = new URLSearchParams(window.location.search)
+    const reportId = params.get('reportId')
+
+    if (!reportId) return
+
+    const report = reports.find((item) => item.id === reportId)
+
+    if (report) {
+      setSelectedReport(report)
+    }
+  }, [reports, reportsLoading])
+
   const handleOpenReport = (report: ReportResponse) => {
-    setSelectedReportId((current) =>
-      current === report.id ? null : report.id
+    setSelectedReport(report)
+
+    router.replace(
+      `/notebooks/${encodeURIComponent(notebookId)}?reportId=${encodeURIComponent(report.id)}`,
+      { scroll: false }
+    )
+  }
+
+  const handleCloseReport = () => {
+    setSelectedReport(null)
+
+    router.replace(
+      `/notebooks/${encodeURIComponent(notebookId)}`,
+      { scroll: false }
     )
   }
 
@@ -642,86 +674,63 @@ export function StudioColumn({
                   )
                 })}
 
-                {/* Saved AI Reports */}
+                {/* Studio Outputs */}
                 <div className="pt-3">
                   <div className="mb-2 flex items-center justify-between px-1">
                     <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      {tr('Báo cáo đã lưu', 'Saved reports')}
+                      {tr('Sản phẩm đã tạo', 'Studio Outputs')}
                     </h3>
                     {reportsLoading && <LoadingSpinner />}
                   </div>
 
-                  {reports.map((report) => {
-                    const isSelected = selectedReportId === report.id
-                    const content = getReportContent(report)
-
-                    return (
-                      <div
-                        key={report.id}
-                        className="mb-2 overflow-hidden rounded-xl border"
-                      >
-                        <button
-                          type="button"
-                          onClick={() => handleOpenReport(report)}
-                          className="flex w-full items-center gap-3 px-3 py-3 text-left transition-colors hover:bg-muted/60"
-                        >
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted">
-                            <FileText className="h-5 w-5 text-teal" />
-                          </div>
-
-                          <div className="min-w-0 flex-1">
-                            <h4 className="truncate text-sm font-medium">
-                              {report.title || tr('Báo cáo không có tiêu đề', 'Untitled report')}
-                            </h4>
-                            <p className="truncate text-xs text-muted-foreground">
-                              {tr('Báo cáo AI', 'AI report')}
-                              {' · '}
-                              {formatDistanceToNow(
-                                new Date(report.updated || report.created),
-                                {
-                                  addSuffix: true,
-                                  locale: getDateLocale(language),
-                                }
-                              )}
-                            </p>
-                          </div>
-
-                          <span className="text-xs text-muted-foreground">
-                            {isSelected ? '−' : '+'}
-                          </span>
-                        </button>
-
-                        {isSelected && (
-                          <div className="border-t bg-muted/20 px-3 py-3">
-                            {content ? (
-                              <pre className="max-h-[420px] overflow-auto whitespace-pre-wrap break-words text-xs leading-6 font-sans">
-                                {content}
-                              </pre>
-                            ) : (
-                              <p className="text-xs text-muted-foreground">
-                                {tr(
-                                  'Report chưa có nội dung được lưu.',
-                                  'No saved report content was found.'
-                                )}
-                              </p>
-                            )}
-                          </div>
-                        )}
+                  {reports.map((report) => (
+                    <button
+                      key={report.id}
+                      type="button"
+                      onClick={() => handleOpenReport(report)}
+                      className="group mb-2 flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition-colors hover:bg-muted/50"
+                    >
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+                        <FileText className="h-5 w-5 text-teal" />
                       </div>
-                    )
-                  })}
+
+                      <div className="min-w-0 flex-1">
+                        <h4 className="truncate text-sm font-medium">
+                          {report.title ||
+                            tr('Báo cáo không có tiêu đề', 'Untitled report')}
+                        </h4>
+
+                        <p className="truncate text-xs text-muted-foreground">
+                          {tr('Báo cáo AI', 'AI report')}
+                          {' · '}
+                          {formatDistanceToNow(
+                            new Date(report.updated || report.created),
+                            {
+                              addSuffix: true,
+                              locale: getDateLocale(language),
+                            }
+                          )}
+                        </p>
+                      </div>
+
+                      <span className="text-xs text-muted-foreground group-hover:text-foreground">
+                        +
+                      </span>
+                    </button>
+                  ))}
 
                   {!reportsLoading && reports.length === 0 && (
                     <p className="px-1 py-2 text-xs text-muted-foreground">
                       {tr(
-                        'Chưa có báo cáo nào được lưu.',
-                        'No reports saved yet.'
+                        'Chưa có sản phẩm nào được tạo.',
+                        'No outputs created yet.'
                       )}
                     </p>
                   )}
                 </div>
 
                 {outputs.length === 0 &&
+                  reports.length === 0 &&
                   !generateMindMap.isPending &&
                   !generateQuiz.isPending &&
                   !generateFlashcards.isPending && (
@@ -810,6 +819,22 @@ export function StudioColumn({
         sources={sources ?? []}
         defaultSelectedIds={defaultSelectedIds}
         onSubmit={onGenerateReport}
+      />
+
+      <ReportViewerDialog
+        open={selectedReport !== null}
+        onOpenChange={(open) => {
+          if (!open) handleCloseReport()
+        }}
+        title={selectedReport?.title}
+        content={
+          selectedReport
+            ? getReportContent(selectedReport)
+            : ''
+        }
+        notebookId={notebookId}
+        reportId={selectedReport?.id ?? ''}
+        sources={sources ?? []}
       />
     </>
   )
