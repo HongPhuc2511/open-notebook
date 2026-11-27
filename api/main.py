@@ -1,4 +1,4 @@
-# Load environment variables
+﻿# Load environment variables
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -38,6 +38,7 @@ from api.routers import (
     notes,
     podcasts,
     providers,
+    reports,
     search,
     settings,
     source_chat,
@@ -224,7 +225,7 @@ app = FastAPI(
 
 if CORS_IS_DEFAULT_WILDCARD:
     logger.warning(
-        "CORS_ORIGINS is not set — API accepts cross-origin requests from any "
+        "CORS_ORIGINS is not set â€” API accepts cross-origin requests from any "
         "origin (default: '*'). For production deployments, set CORS_ORIGINS to "
         "your frontend origin(s), e.g. "
         "CORS_ORIGINS=https://notebook.example.com"
@@ -402,6 +403,7 @@ app.include_router(chat.router, prefix="/api", tags=["chat"])
 app.include_router(source_chat.router, prefix="/api", tags=["source-chat"])
 app.include_router(credentials.router, prefix="/api", tags=["credentials"])
 app.include_router(providers.router, prefix="/api", tags=["providers"])
+app.include_router(reports.router, prefix="/api", tags=["reports"])
 app.include_router(capabilities.router, prefix="/api", tags=["capabilities"])
 app.include_router(languages.router, prefix="/api", tags=["languages"])
 
@@ -414,3 +416,4 @@ async def root():
 @app.get("/health")
 async def health():
     return {"status": "healthy"}
+
